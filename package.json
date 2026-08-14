@@ -1,0 +1,47 @@
+{
+  "name": "ecgo-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:push": "drizzle push",
+    "db:migrate": "drizzle migrate",
+    "db:seed": "tsx drizzle/seed.ts",
+    "test": "vitest",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^8.0.2",
+    "@hookform/resolvers": "^3.3.4",
+    "@neondatabase/serverless": "^0.0.16",
+    "drizzle-orm": "^0.31.1",
+    "lucide-react": "^0.326.0",
+    "next": "15.2.4",
+    "react": "18.3.3",
+    "react-dom": "18.3.3",
+    "recharts": "^2.12.7",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.32",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.1",
+    "@vitest/coverage-v8": "^1.6.0",
+    "@vitest/ui": "^1.6.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "15.2.4",
+    "globals": "^1.5.9",
+    "happy-dom": "^11.1.0",
+    "postcss": "^8.4.41",
+    "tsx": "^4.20.2",
+    "tailwindcss": "^3.4.21",
+    "typescript": "^5.5.3",
+    "vitest": "^1.6.0"
+  }
+}

@@ -8,9 +8,21 @@ services:
       POSTGRES_PASSWORD: REDACTED
       POSTGRES_DB: ecgo_dashboard
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  dashboard:
+    build: .
+    container_name: ecgo-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:REDACTED@postgres:5432/ecgo_dashboard
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    depends_on:
+      - postgres
     restart: unless-stopped
 
 volumes:

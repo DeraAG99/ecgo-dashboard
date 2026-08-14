@@ -1,8 +1,7 @@
-import { defineConfig } from "next"
+import { NextConfig } from "next"
 
-export default defineConfig({
+const nextConfig: NextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
   images: {
     remotePatterns: [
       {
@@ -11,14 +10,6 @@ export default defineConfig({
       },
     ],
   },
-  experimental: {
-    turbo: {
-      rules: {
-        "*.svg": {
-          loaders: [],
-          parsers: [],
-        },
-      },
-    },
-  },
-})
+}
+
+export default nextConfig

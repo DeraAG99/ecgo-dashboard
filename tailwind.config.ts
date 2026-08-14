@@ -1,4 +1,4 @@
-import types from "tailwindcss/types"
+import type { Config } from "tailwindcss"
 
 export default {
   content: [
@@ -10,6 +10,30 @@ export default {
   theme: {
     extend: {
       colors: {
+        "ecgo-blue": "#1A2B4C",
+        "ecgo-green": "#00A651",
+        surface: "#f7f9fc",
+        "surface-container-lowest": "#ffffff",
+        "surface-container-low": "#f2f4f7",
+        "surface-container": "#eceef1",
+        "surface-container-high": "#e6e8eb",
+        "surface-container-highest": "#e0e3e6",
+        "surface-dim": "#d8dadd",
+        "on-surface": "#191c1e",
+        "on-surface-variant": "#3d4a3e",
+        "on-background": "#191c1e",
+        "outline-variant": "#bccabb",
+        outline: "#6d7b6d",
+        primary: "#006b32",
+        "primary-container": "#008740",
+        "on-primary-container": "#f7fff3",
+        secondary: "#4e5e82",
+        "on-secondary": "#ffffff",
+        error: "#ba1a1a",
+        "error-container": "#ffdad6",
+        on_error: "#ffffff",
+        tertiary: "#a72e4a",
+        "tertiary-container": "#c84761",
         empty: "#9ca3af",
         charging: "#3b82f6",
         full: "#22c55e",
@@ -19,7 +43,49 @@ export default {
         offline: "#6b7280",
         maintenance: "#a16207",
       },
+      fontFamily: {
+        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
+        mono: ["var(--font-jetbrains-mono)", "JetBrains Mono", "monospace"],
+        "data-mono": ["var(--font-jetbrains-mono)", "JetBrains Mono", "monospace"],
+      },
+      fontSize: {
+        "label-caps": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "700" }],
+        "data-mono": ["14px", { lineHeight: "20px", fontWeight: "500" }],
+        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+        "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+        "headline-md": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+        "headline-lg": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+        display: ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+      },
+      borderRadius: {
+        DEFAULT: "0.25rem",
+        lg: "0.5rem",
+        xl: "0.75rem",
+        "2xl": "1rem",
+        "3xl": "1.5rem",
+        full: "9999px",
+      },
+      spacing: {
+        gutter: "24px",
+        "margin-page": "32px",
+        "sidebar-width": "260px",
+        "container-max": "1440px",
+      },
+      boxShadow: {
+        card: "0px 4px 10px rgba(0, 0, 0, 0.04)",
+        "card-hover": "0px 6px 14px rgba(0, 0, 0, 0.08)",
+      },
+      animation: {
+        "pulse-glow": "pulse-glow 2s infinite",
+      },
+      keyframes: {
+        "pulse-glow": {
+          "0%": { boxShadow: "0 0 0 0 rgba(59, 130, 246, 0.4)" },
+          "70%": { boxShadow: "0 0 0 10px rgba(59, 130, 246, 0)" },
+          "100%": { boxShadow: "0 0 0 0 rgba(59, 130, 246, 0)" },
+        },
+      },
     },
   },
   plugins: [],
-} satisfies Types.Config
+} satisfies Config

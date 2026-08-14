@@ -1,23 +1,24 @@
-import globals from "globals"
-import pluginJs from "@eslint/js"
+import js from "@eslint/js"
 import tseslint from "typescript-eslint"
-import pluginReact from "eslint-plugin-react"
+import globals from "globals"
+import { FlatCompat } from "@eslint/eslintrc"
+import path from "path"
+import { fileURLToPath } from "url"
 
-export default [
-  { files: ["**/*.{js,jsx,ts,tsx}"] },
-  { languageOptions: { parserOptions: { ecmaVersion: 2020, sourceType: "module", ecmaFeatures: { jsx: true } } } },
-  { languageOptions: { globals: { ...globals.browser, ...globals.node } } },
-  pluginJs.configs.recommended,
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const compat = new FlatCompat({ baseDirectory: __dirname })
+
+export default tseslint.config(
+  js.configs.recommended,
   ...tseslint.configs.recommended,
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
-    plugins: {
-      react: pluginReact,
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
     },
-    rules: {
-      "react/react-in-jsx-scope": "off",
-      "react/prop-types": "off",
-      "@typescript-eslint/explicit-function-return-type": "warn",
-      "@typescript-eslint/no-explicit-any": "warn",
-    },
-  },
-]
+  }
+)

@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, text, integer, timestamp, pgEnum } from "drizzle-orm/pg-core"
 
 export const statusEnum = pgEnum("status", ["ONLINE", "OFFLINE", "MAINTENANCE"])
 export const slotStateEnum = pgEnum("slot_state", ["EMPTY", "CHARGING", "FULL", "LOCKED", "FAULT"])

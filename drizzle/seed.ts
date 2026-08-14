@@ -1,7 +1,6 @@
 import { db } from "@/lib/db"
 import { cabinets, slots, transactions } from "@/lib/schema"
 import { faker } from "@faker-js/faker"
-import { sql } from "drizzle-orm"
 
 const BRANCHES = [
   "Kemayoran",
@@ -12,14 +11,6 @@ const BRANCHES = [
   "Bekasi",
   "Jakarta Pusat",
   "Jakarta Timur",
-]
-
-const SLOT_STATES: ("EMPTY" | "CHARGING" | "FULL" | "LOCKED" | "FAULT")[] = [
-  "EMPTY",
-  "CHARGING",
-  "FULL",
-  "LOCKED",
-  "FAULT",
 ]
 
 async function clearData() {
@@ -34,15 +25,18 @@ async function seedCabinets(count: number = 50) {
   for (let i = 0; i < count; i++) {
     const code = `CB-${String(i + 1).padStart(3, "0")}`
     const branch = faker.helpers.arrayElement(BRANCHES)
-    const status: "ONLINE" | "OFFLINE" | "MAINTENANCE" = faker.helpers.weightedArrayElement(
-      [
-        { value: "ONLINE", weight: 70 },
-        { value: "OFFLINE", weight: 20 },
-        { value: "MAINTENANCE", weight: 10 },
-      ]
-    )
+    const status: "ONLINE" | "OFFLINE" | "MAINTENANCE" = 
+      Math.random() < 0.7
+        ? "ONLINE"
+        : Math.random() < 0.9
+        ? "OFFLINE"
+        : "MAINTENANCE"
+    
+    const now = new Date()
     const lastHeartbeat =
-      status === "OFFLINE" ? faker.date.past({ days: 2 }) : faker.date.recent({ days: 1 })
+      status === "OFFLINE"
+        ? faker.date.past(60, now)
+        : faker.date.recent(7, now)
 
     const result = await db
       .insert(cabinets)
@@ -56,7 +50,9 @@ async function seedCabinets(count: number = 50) {
       })
       .returning()
 
-    cabinetIds.push(result[0].id)
+    if (result[0]?.id) {
+      cabinetIds.push(result[0].id)
+    }
   }
 
   return cabinetIds
@@ -65,18 +61,20 @@ async function seedCabinets(count: number = 50) {
 async function seedSlots(cabinetIds: string[]) {
   for (const cabinetId of cabinetIds) {
     for (let i = 1; i <= 12; i++) {
-      const state: "EMPTY" | "CHARGING" | "FULL" | "LOCKED" | "FAULT" = faker.helpers.weightedArrayElement(
-        [
-          { value: "EMPTY", weight: 20 },
-          { value: "CHARGING", weight: 20 },
-          { value: "FULL", weight: 30 },
-          { value: "LOCKED", weight: 15 },
-          { value: "FAULT", weight: 15 },
-        ]
-      )
+      const rand = Math.random()
+      const state: "EMPTY" | "CHARGING" | "FULL" | "LOCKED" | "FAULT" =
+        rand < 0.2
+          ? "EMPTY"
+          : rand < 0.4
+          ? "CHARGING"
+          : rand < 0.7
+          ? "FULL"
+          : rand < 0.85
+          ? "LOCKED"
+          : "FAULT"
 
-      const soc = state === "EMPTY" ? null : faker.number.int({ min: 20, max: 100 })
-      const lastUpdated = faker.date.recent({ days: 1 })
+      const soc = state === "EMPTY" ? null : Math.floor(Math.random() * 80 + 20)
+      const lastUpdated = faker.date.recent(7)
 
       await db.insert(slots).values({
         id: `${cabinetId}-slot-${i}`,
@@ -96,9 +94,9 @@ async function seedTransactions(cabinetIds: string[], count: number = 20000) {
   for (let i = 0; i < count; i++) {
     const cabinetId = faker.helpers.arrayElement(cabinetIds)
 
-    const hour = Math.floor(Math.random() * 12)
-    const minute = Math.floor(Math.random() * 60)
-    const second = Math.floor(Math.random() * 60)
+    const hour = Math.floor(Math.random() * 24)
+    const minute = faker.number.int({ min: 0, max: 59 })
+    const second = faker.number.int({ min: 0, max: 59 })
 
     const swappedAt = new Date(now)
     swappedAt.setHours(hour, minute, second, 0)

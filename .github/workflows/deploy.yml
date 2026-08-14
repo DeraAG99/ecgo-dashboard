@@ -34,7 +34,7 @@ jobs:
         run: bun run build
 
       - name: Validate docker-compose
-        run: docker compose -f docker-compose.yml config --quiet
+        run: docker compose -f docker-compose.yml --env-file .env.example config --quiet
 
   deploy:
     name: Deploy to VM

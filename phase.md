@@ -1,7 +1,7 @@
 # Development Phases - ECGO Battery Swap Dashboard
 
-> **Status (updated 14 Aug 2026):** Fase 1-5 ✅ selesai. Fase 6 ⏳ pending (deploy VM).
-> **Keputusan penting:** Dev memakai PostgreSQL lokal `localhost:5432` (`postgres/password`); postgres Docker (host 5433) dikhususkan untuk deploy VM. API anti-N+1 memakai single SQL query; skema validasi Zod terpusat di `lib/validation.ts`.
+> **Status (updated 14 Aug 2026):** Fase 1-6 ✅ selesai. Fase 7 ⏳ pending (workflow deploy + deploy VM).
+> **Keputusan penting:** Dev memakai PostgreSQL lokal `localhost:5432` (`postgres/password`); postgres Docker (host 5433) dikhususkan untuk deploy VM. API anti-N+1 memakai single SQL query; skema validasi Zod terpusat di `lib/validation.ts`. Package manager: **Bun** (`bun.lock`); DB migration-driven via `drizzle/migrations` + `db:migrate`.
 
 ## Fase 1: Foundation (Hari 1-2)
 
@@ -104,7 +104,7 @@ Bangun antarmuka pengguna sesuai mockup.
   - Tabel 20 transaksi terakhir
   - Kolom: User ID, Old Battery, New Battery, Swapped At
 
-> Catatan: `SlotGrid`, `SwapChart`, dan `TransactionList` diintegrasikan inline di halaman detail `app/cabinets/[id]/page.tsx` (bukan file komponen terpisah). Layout memakai `DashboardLayout` + `Sidebar` + `Topbar`.
+> Catatan: `SlotGrid`, `SwapChart`, dan `TransactionList` diintegrasikan inline di halaman detail `app/dashboard/cabinets/[id]/page.tsx` (bukan file komponen terpisah). Layout memakai `DashboardLayout` + `Sidebar` + `Topbar`. Semua halaman berada di bawah prefix `/dashboard` (`/dashboard`, `/dashboard/cabinets`, `/dashboard/cabinets/:id`, `/dashboard/transactions`); `/` me-redirect ke `/dashboard`.
 
 ### Deliverables
 - UI yang responsive
@@ -120,18 +120,20 @@ Pastikan semua komponen dan API berfungsi dengan baik.
 
 ### Tasks
 - [x] Setup Vitest
-- [x] Tulis unit tests untuk utils (23 tests: `lib/validation.test.ts`, `lib/checkin/evaluateCheckin.test.ts`)
-- [x] Tulis unit tests untuk API routes (validasi Zod via schema test)
+- [x] Tulis unit tests untuk utils (62 tests: `lib/validation.test.ts`, `lib/checkin/evaluateCheckin.test.ts`)
+- [x] Tulis unit tests untuk API routes (mock `@/lib/db`)
+- [x] Tulis component tests (StatusBadge, CabinetTable, Sidebar, Topbar)
 - [x] Jalankan `npm run lint`
 - [x] Jalankan `npm run typecheck`
 - [x] Jalankan `npm run test`
 - [x] Perbaiki semua error/warning
-- [x] Optimasi performa (anti-N+1 single SQL query, agregasi chart di DB)
+- [x] Optimasi performa (anti-N+1 single SQL query, agregasi chart di DB, index `cabinets_status`, `slots_cabinet_id`, `transactions_cabinet_swapped`)
+- [x] Code coverage ≥ 80% (All files: 96.9% statements, 86.11% branches, 92% functions)
 
 ### Deliverables
 - Semua linting passing
 - Semua type checking passing
-- Minimal 80% code coverage (belum diukur)
+- Minimal 80% code coverage tercapai (96.9% statements / 92% functions)
 
 ---
 
@@ -141,7 +143,7 @@ Pastikan semua komponen dan API berfungsi dengan baik.
 Deploy ke lingkungan production.
 
 ### Tasks
-- [ ] Setup Docker production image (Dockerfile sudah ada, `docker-compose build` belum diverifikasi ulang)
+- [x] Setup Docker production image (Dockerfile ada, `docker-compose build` berhasil)
 - [ ] Update workflow deployment di GitHub Actions
 - [ ] Deploy ke staging server
 - [ ] Uji di staging

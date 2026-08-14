@@ -1,21 +1,67 @@
-name: Test SSH Connection
+name: CI/CD
 
 on:
-  workflow_dispatch:  # Bisa di-trigger manual dari tab Actions
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  test-ssh:
+  ci:
+    name: Lint, Test & Build
     runs-on: ubuntu-latest
     steps:
-      - name: Test SSH Connection
-        uses: appleboy/ssh-action@v1.0.0
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Test with coverage
+        run: bunx vitest run --coverage
+
+      - name: Build
+        run: bun run build
+        env:
+          DATABASE_URL: REDACTED
+
+      - name: Validate docker-compose
+        run: docker compose -f docker-compose.yml config --quiet
+
+  deploy:
+    name: Deploy to VM
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      APP_DIR: ${{ vars.APP_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
+          envs: APP_DIR
           script: |
-            echo "✅ SSH Connection Success!"
-            hostname
-            whoami
-            pwd
+            set -e
+            cd "${APP_DIR:-/opt/ecgo-dashboard}"
+            git pull origin main
+            docker compose -f docker-compose.yml pull
+            docker compose -f docker-compose.yml up -d --build
+            docker image prune -f
+            echo "Deploy selesai. Aplikasi berjalan di port 3000."

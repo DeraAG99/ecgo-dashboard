@@ -17,12 +17,12 @@ createdb -U postgres ecgo_dashboard
 # 2. Salin file environment
 cp .env.example .env.local
 
-# 3. Install dependencies
-npm install
+# 3. Install dependencies (package manager: **Bun**)
+bun install
 
-# 4. Buat tabel database
+# 4. Buat tabel database via migration
 # PowerShell: set DATABASE_URL inline karena drizzle-kit tidak membaca .env.local
-$env:DATABASE_URL="postgresql://postgres:password@localhost:5432/ecgo_dashboard"; npm run db:push
+$env:DATABASE_URL="postgresql://postgres:password@localhost:5432/ecgo_dashboard"; npm run db:migrate
 
 # 5. Seed data awal (50 cabinets, 600 slots, 20k transaksi)
 $env:DATABASE_URL="postgresql://postgres:password@localhost:5432/ecgo_dashboard"; npm run db:seed
@@ -143,28 +143,32 @@ Detail cabinet dengan slot, transaksi, dan grafik.
 
 ```bash
 # Quality checks
-npm run lint      # ESLint
-npm run typecheck # TypeScript
-npm run test      # Vitest (watch mode); gunakan "npx vitest run" untuk sekali jalan / CI
-npm run test:coverage
+bun run lint         # ESLint
+bun run typecheck    # TypeScript
+bun run test         # Vitest (watch mode); gunakan "bunx vitest run" untuk sekali jalan / CI
+bunx vitest run --coverage  # Coverage (target ≥80%; saat ini 96.9% statements, 92% functions)
 
 # Database (butuh $env:DATABASE_URL inline di PowerShell)
-npm run db:push   # Push schema ke database
-npm run db:seed   # Seed 50 cabinets, 600 slots, 20k transaksi
+npm run db:migrate   # Apply migration (drizzle/migrations)
+npm run db:seed      # Seed 50 cabinets, 600 slots, 20k transaksi
 
 # Build & Deploy
-npm run build     # Build untuk production
-npm run start     # Run production server
+bun run build        # Build untuk production
+bun run start        # Run production server
 ```
+
+## CI/CD
+
+`.github/workflows/test-ssh.yml` otomatis menjalankan lint, typecheck, test (coverage), dan build pada setiap push/PR ke `main`. Push ke `main` yang sukses juga memicu deploy ke VM via SSH (butuh secrets `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_PORT`; lokasi app di VM via repo var `APP_DIR`, default `/opt/ecgo-dashboard`).
 
 ## Yang Belum Selesai
 
-- [x] Unit testing (validasi Zod & logic check-in di `lib/checkin`)
-- [ ] Coverage target (minimal 80%) belum diukur
+- [x] Unit testing (validasi Zod, logic check-in, API routes, components — 62 tests)
+- [x] Code coverage ≥ 80% (All files: 96.9% statements, 86.11% branches, 92% functions)
+- [x] CI/CD workflow auto-deploy (test-ssh.yml sudah di-upgrade)
 - [ ] E2E testing
 - [ ] Dark mode
-- [ ] Deploy ke VM (workflow SSH sudah ada di `.github/workflows`, perlu update)
-- [ ] CI/CD workflow auto-deploy belum aktif
+- [ ] Deploy ke VM staging & production (workflow siap, tinggal set secrets & repo vars)
 
 ## AI Tools
 

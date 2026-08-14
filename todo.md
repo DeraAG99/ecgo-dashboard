@@ -30,20 +30,25 @@
 - [x] TransactionList.tsx (integrasi dalam page.tsx)
 
 ## Phase 5: Pages ✅
-- [x] app/page.tsx (halaman utama - CabinetTable)
-- [x] app/cabinets/[id]/page.tsx (detail cabinet)
+- [x] app/dashboard/page.tsx (overview - KPI dashboard)
+- [x] app/dashboard/cabinets/page.tsx (daftar cabinet)
+- [x] app/dashboard/cabinets/[id]/page.tsx (detail cabinet)
+- [x] app/dashboard/transactions/page.tsx (riwayat transaksi)
 - [x] app/layout.tsx
 - [x] app/globals.css
 
 ## Phase 6: Quality & Testing ✅
 - [x] Vitest configuration (vitest.config.ts)
-- [x] Unit tests untuk schema & utils (23 tests: lib/validation.test.ts + lib/checkin/evaluateCheckin.test.ts)
+- [x] Unit tests untuk schema & utils (62 tests: lib/validation.test.ts + lib/checkin/evaluateCheckin.test.ts + API routes + components)
+- [x] Component tests (StatusBadge, CabinetTable, Sidebar, Topbar)
+- [x] API route tests (cabinets, detail, export, transactions, dashboard — mock @/lib/db)
+- [x] Code coverage ≥ 80% (All files: 96.9% statements, 86.11% branches, 92% functions)
 - [x] Lint passing (npm run lint)
 - [x] Type checking passing (npm run typecheck)
 - [x] Build successful (npm run build)
 
 ## Phase 7: Deployment ⏳
-- [ ] Dockerize Next.js app (Dockerfile sudah ada, docker-compose build belum diverifikasi ulang)
+- [x] Dockerize Next.js app (Dockerfile ada, docker-compose build berhasil)
 - [ ] Update workflow SSH deployment (VM)
 - [ ] Deploy ke server staging
 - [ ] Deploy ke server production
@@ -54,6 +59,6 @@
 
 ## Statistik
 - **Total Tasks:** 34
-- **Completed:** 30
+- **Completed:** 31
 - **In Progress:** 0
-- **Pending:** 4
+- **Pending:** 3

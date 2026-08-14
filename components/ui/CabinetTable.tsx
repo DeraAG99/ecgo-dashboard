@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef, Suspense } from "react"
+import { useEffect, useState, useRef, useCallback, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import StatusBadge from "@/components/shared/StatusBadge"
@@ -52,37 +52,43 @@ function CabinetTableInner() {
     const params = new URLSearchParams()
     if (debouncedSearch) params.set("search", debouncedSearch)
     if (status) params.set("status", status)
-    router.push(`/cabinets?${params.toString()}`)
+    router.push(`/dashboard/cabinets?${params.toString()}`)
   }, [debouncedSearch, status, router])
 
   useEffect(() => {
     setSearchInput(search)
   }, [search])
 
-  useEffect(() => {
-    const fetchCabinets = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const params = new URLSearchParams()
-        if (search) params.set("search", search)
-        if (status) params.set("status", status)
-        params.set("page", String(page))
-        params.set("limit", String(limit))
-        const response = await fetch(`/api/cabinets?${params.toString()}`)
-        if (!response.ok) throw new Error("Gagal memuat data cabinet")
-        const data = await response.json()
-        setCabinets(data.data)
-        setTotal(data.total)
-        setTotalPages(data.totalPages)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Terjadi kesalahan")
-      } finally {
-        setLoading(false)
-      }
+  const fetchCabinets = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      if (search) params.set("search", search)
+      if (status) params.set("status", status)
+      params.set("page", String(page))
+      params.set("limit", String(limit))
+      const response = await fetch(`/api/cabinets?${params.toString()}`)
+      if (!response.ok) throw new Error("Gagal memuat data cabinet")
+      const data = await response.json()
+      setCabinets(data.data)
+      setTotal(data.total)
+      setTotalPages(data.totalPages)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan")
+    } finally {
+      setLoading(false)
     }
+  }, [search, status, page, limit])
+
+  useEffect(() => {
     fetchCabinets()
-  }, [search, status, page])
+  }, [fetchCabinets])
+
+  useEffect(() => {
+    const interval = setInterval(fetchCabinets, 30000)
+    return () => clearInterval(interval)
+  }, [fetchCabinets])
 
   if (loading && cabinets.length === 0) return <LoadingSpinner />
   if (error) return <ErrorMessage message={error} />
@@ -117,7 +123,7 @@ function CabinetTableInner() {
                 const params = new URLSearchParams()
                 if (searchInput || search) params.set("search", searchInput || search)
                 if (e.target.value) params.set("status", e.target.value)
-                router.push(`/cabinets?${params.toString()}`)
+                router.push(`/dashboard/cabinets?${params.toString()}`)
               }}
               className="appearance-none w-full sm:w-auto pl-4 pr-10 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm text-on-surface font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-sm cursor-pointer"
             >
@@ -130,6 +136,17 @@ function CabinetTableInner() {
               expand_more
             </span>
           </div>
+          <a
+            href={`/api/cabinets/export?search=${encodeURIComponent(search)}&status=${status}`}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-ecgo-green text-white rounded-lg text-body-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            Export CSV
+          </a>
+          <span className="inline-flex items-center gap-2 text-xs text-on-surface-variant whitespace-nowrap">
+            <span className="w-2 h-2 rounded-full bg-ecgo-green animate-pulse"></span>
+            Auto-refresh 30s
+          </span>
         </div>
       </div>
 
@@ -183,7 +200,7 @@ function CabinetTableInner() {
                     </td>
                     <td className="py-4 px-6 text-right">
                       <Link
-                        href={`/cabinets/${cabinet.id}`}
+                        href={`/dashboard/cabinets/${cabinet.id}`}
                         className="inline-flex items-center gap-1 text-primary font-medium hover:underline"
                       >
                         Detail <span className="material-symbols-outlined text-sm">chevron_right</span>

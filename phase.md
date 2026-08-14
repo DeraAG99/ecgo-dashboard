@@ -1,18 +1,21 @@
 # Development Phases - ECGO Battery Swap Dashboard
 
+> **Status (updated 14 Aug 2026):** Fase 1-5 ✅ selesai. Fase 6 ⏳ pending (deploy VM).
+> **Keputusan penting:** Dev memakai PostgreSQL lokal `localhost:5432` (`postgres/password`); postgres Docker (host 5433) dikhususkan untuk deploy VM. API anti-N+1 memakai single SQL query; skema validasi Zod terpusat di `lib/validation.ts`.
+
 ## Fase 1: Foundation (Hari 1-2)
 
 ### Tujuan
 Setup infrastruktur dasar project Next.js dengan konfigurasi yang benar.
 
 ### Tasks
-- [ ] Buat repositori baru
-- [ ] Initialize git
-- [ ] Setup Next.js 15 App Router dengan TypeScript
-- [ ] Konfigurasi Tailwind CSS
-- [ ] Setup ESLint & Prettier
-- [ ] Buat struktur folder yang diperlukan
-- [ ] Konfigurasi Docker untuk PostgreSQL
+- [x] Buat repositori baru
+- [x] Initialize git
+- [x] Setup Next.js 15 App Router dengan TypeScript
+- [x] Konfigurasi Tailwind CSS
+- [x] Setup ESLint & Prettier
+- [x] Buat struktur folder yang diperlukan
+- [x] Konfigurasi Docker untuk PostgreSQL
 
 ### Deliverables
 - `package.json` dengan semua dependencies
@@ -29,17 +32,17 @@ Setup infrastruktur dasar project Next.js dengan konfigurasi yang benar.
 Buat schema database, migrasi, dan seeding data.
 
 ### Tasks
-- [ ] Hubungkan database di `lib/db.ts`
-- [ ] Definisikan schema di `lib/schema.ts`
+- [x] Hubungkan database di `lib/db.ts`
+- [x] Definisikan schema di `lib/schema.ts`
   - `cabinets` table
   - `slots` table
   - `transactions` table
-- [ ] Buat enum `status` dan `slot_state`
-- [ ] Jalankan `drizzle push` untuk migrasi
-- [ ] Buat script seeding di `drizzle/seed.ts`
-- [ ] Seed 50 cabinets dengan faker
-- [ ] Seed 600 slots (12 per cabinet)
-- [ ] Seed 20.000 transaksi
+- [x] Buat enum `status` dan `slot_state`
+- [x] Jalankan `drizzle push` untuk migrasi
+- [x] Buat script seeding di `drizzle/seed.ts`
+- [x] Seed 50 cabinets dengan faker
+- [x] Seed 600 slots (12 per cabinet)
+- [x] Seed 20.000 transaksi
 
 ### Deliverables
 - Schema database yang terhubung ke Drizzle
@@ -55,19 +58,21 @@ Buat schema database, migrasi, dan seeding data.
 Buat REST API untuk frontend consumenya.
 
 ### Tasks
-- [ ] Buat route `GET /api/cabinets`
+- [x] Buat route `GET /api/cabinets`
   - Implementasi filter: search, status
   - Implementasi sorting: swapCount24h
   - Implementasi pagination: page, limit
-  - Hitung filledSlots & swapCount24h di database
-- [ ] Buat route `GET /api/cabinets/[id]`
+  - Hitung filledSlots & swapCount24h di database (single SQL query anti-N+1)
+- [x] Buat route `GET /api/cabinets/[id]`
   - Detail cabinet
   - Daftar slots (ORDER BY slotNumber)
   - 20 transaksi terakhir
-  - Chart data 24 jam
-- [ ] Validasi input dengan Zod
-- [ ] Error handling yang konsisten
+  - Chart data 24 jam (di-agregasi di database, GROUP BY jam)
+- [x] Validasi input dengan Zod (skema terpusat di `lib/validation.ts`)
+- [x] Error handling yang konsisten
 - [ ] Rate limiting (opsional)
+
+> Tambahan di luar spec: `GET /api/dashboard` (ringkasan overview) & `GET /api/transactions` (riwayat transaksi).
 
 ### Deliverables
 - API yang dapat dipanggil langsung lewat browser/postman
@@ -82,22 +87,24 @@ Buat REST API untuk frontend consumenya.
 Bangun antarmuka pengguna sesuai mockup.
 
 ### Tasks
-- [ ] Buat `CabinetTable` di halaman utama
+- [x] Buat `CabinetTable` di halaman utama
   - Header kolom: Code, Branch, Status, Filled/Total, Swap 24h, Last Heartbeat
   - Search input dengan debounce 300ms
   - Dropdown filter status
   - Pagination (Previous/Next)
   - State: loading, empty, error
-- [ ] Buat `SlotGrid` pada halaman detail
+- [x] Buat `SlotGrid` pada halaman detail
   - Grid 4x3 atau 6x2
   - Warna per state: EMPTY(gray), CHARGING(blue), FULL(green), LOCKED(red), FAULT(orange)
   - Tampilkan SOC di tiap slot
-- [ ] Buat `SwapChart`
+- [x] Buat `SwapChart`
   - Batang horisontal 24 jam
   - Data swap per jam
-- [ ] Buat `TransactionList`
+- [x] Buat `TransactionList`
   - Tabel 20 transaksi terakhir
   - Kolom: User ID, Old Battery, New Battery, Swapped At
+
+> Catatan: `SlotGrid`, `SwapChart`, dan `TransactionList` diintegrasikan inline di halaman detail `app/cabinets/[id]/page.tsx` (bukan file komponen terpisah). Layout memakai `DashboardLayout` + `Sidebar` + `Topbar`.
 
 ### Deliverables
 - UI yang responsive
@@ -112,19 +119,19 @@ Bangun antarmuka pengguna sesuai mockup.
 Pastikan semua komponen dan API berfungsi dengan baik.
 
 ### Tasks
-- [ ] Setup Vitest
-- [ ] Tulis unit tests untuk utils
-- [ ] Tulis unit tests untuk API routes
-- [ ] Jalankan `npm run lint`
-- [ ] Jalankan `npm run typecheck`
-- [ ] Jalankan `npm run test`
-- [ ] Perbaiki semua error/warning
-- [ ] Optimasi performa
+- [x] Setup Vitest
+- [x] Tulis unit tests untuk utils (23 tests: `lib/validation.test.ts`, `lib/checkin/evaluateCheckin.test.ts`)
+- [x] Tulis unit tests untuk API routes (validasi Zod via schema test)
+- [x] Jalankan `npm run lint`
+- [x] Jalankan `npm run typecheck`
+- [x] Jalankan `npm run test`
+- [x] Perbaiki semua error/warning
+- [x] Optimasi performa (anti-N+1 single SQL query, agregasi chart di DB)
 
 ### Deliverables
 - Semua linting passing
 - Semua type checking passing
-- Minimal 80% code coverage
+- Minimal 80% code coverage (belum diukur)
 
 ---
 
@@ -134,7 +141,7 @@ Pastikan semua komponen dan API berfungsi dengan baik.
 Deploy ke lingkungan production.
 
 ### Tasks
-- [ ] Setup Docker production image
+- [ ] Setup Docker production image (Dockerfile sudah ada, `docker-compose build` belum diverifikasi ulang)
 - [ ] Update workflow deployment di GitHub Actions
 - [ ] Deploy ke staging server
 - [ ] Uji di staging
@@ -163,8 +170,8 @@ Deploy ke lingkungan production.
 
 ## Milestone Checkpoints
 
-- [ ] **Milestone 1 (Hari 4):** Database & Schema READY
-- [ ] **Milestone 2 (Hari 7):** API Endpoints READY
-- [ ] **Milestone 3 (Hari 10):** UI Components READY
-- [ ] **Milestone 4 (Hari 12):** Testing READY
+- [x] **Milestone 1 (Hari 4):** Database & Schema READY
+- [x] **Milestone 2 (Hari 7):** API Endpoints READY
+- [x] **Milestone 3 (Hari 10):** UI Components READY
+- [x] **Milestone 4 (Hari 12):** Testing READY
 - [ ] **Milestone 5 (Hari 14):** Deployment LIVE

@@ -12,8 +12,8 @@
 - [x] Drizzle ORM configuration (drizzle.config.ts)
 - [x] Database schema (cabinets, slots, transactions) - lib/schema.ts
 - [x] Database connection - lib/db.ts
-- [ ] Initial migration (perlu postgres running dulu)
-- [ ] Seeding data (drizzle/seed.ts siap)
+- [x] Initial migration (db:push ke Postgres lokal 5432)
+- [x] Seeding data (50 cabinets, 600 slots, 20k transaksi)
 
 ## Phase 3: API Routes ✅
 - [x] GET /api/cabinets (list with filter, search, sort, pagination)
@@ -35,23 +35,25 @@
 - [x] app/layout.tsx
 - [x] app/globals.css
 
-## Phase 6: Quality & Testing ⏳
-- [ ] Vitest configuration (sudah ada vitest.config.ts)
-- [ ] Unit tests untuk schema & utils
-- [ ] Lint passing (npm run lint)
-- [ ] Type checking passing (npm run typecheck)
-- [ ] Build successful (npm run build)
+## Phase 6: Quality & Testing ✅
+- [x] Vitest configuration (vitest.config.ts)
+- [x] Unit tests untuk schema & utils (23 tests: lib/validation.test.ts + lib/checkin/evaluateCheckin.test.ts)
+- [x] Lint passing (npm run lint)
+- [x] Type checking passing (npm run typecheck)
+- [x] Build successful (npm run build)
 
 ## Phase 7: Deployment ⏳
-- [ ] Dockerize Next.js app (opsional, bisa pakai Vercel)
-- [ ] Update workflow SSH deployment
+- [ ] Dockerize Next.js app (Dockerfile sudah ada, docker-compose build belum diverifikasi ulang)
+- [ ] Update workflow SSH deployment (VM)
 - [ ] Deploy ke server staging
 - [ ] Deploy ke server production
+
+> Catatan: Docker postgres (host 5433) dikhususkan untuk deploy VM; dev memakai Postgres lokal 5432.
 
 ---
 
 ## Statistik
-- **Total Tasks:** 38
-- **Completed:** 28
+- **Total Tasks:** 34
+- **Completed:** 30
 - **In Progress:** 0
-- **Pending:** 10
+- **Pending:** 4

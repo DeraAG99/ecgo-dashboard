@@ -51,7 +51,7 @@ vitest.config.ts
 package.json
 README.md
 AGENTS.md
-todolist.md
+todo.md
 phase.md
 
 ---
@@ -171,4 +171,4 @@ npm run test:coverage     # Coverage report
 
 ## 🚀 CI/CD
 
-Update `.github/workflows/test-ssh.yml` untuk deployment Vercel setelah selesai.
+Update `.github/workflows/test-ssh.yml` untuk deployment vm setelah selesai.

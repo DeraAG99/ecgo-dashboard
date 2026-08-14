@@ -19,7 +19,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: ${DATABASE_URL:?Isi DATABASE_URL di file .env (contoh: postgresql://postgres:PASSWORD@postgres:5432/ecgo_dashboard)}
+      DATABASE_URL: "${DATABASE_URL:?Isi DATABASE_URL di file .env}"
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
     depends_on:
       - postgres

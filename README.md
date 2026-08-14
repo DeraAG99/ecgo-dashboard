@@ -36,22 +36,26 @@ npm run dev
 
 `docker-compose.yml` menyediakan postgres internal di port 5432 (di-mapping ke host 5433 agar tidak bentrok dengan postgres dev). Dipakai saat deployment ke VM.
 
-Credential dibaca **hanya dari file `.env`** (bukan di-commit). Siapkan dulu:
+Credential dibaca **hanya dari file `.env.prod`** (gitignored, tidak di-commit). Di VM, workflow `deploy.yml` otomatis menulis `.env.prod` dari GitHub secrets sebelum `docker compose up`.
 
+Untuk testing lokal:
 ```bash
-# 1. Buat .env dari template lalu isi POSTGRES_PASSWORD & DATABASE_URL
-cp .env.example .env
-#    POSTGRES_PASSWORD=password_kuat
-#    DATABASE_URL=postgresql://postgres:password_kuat@postgres:5432/ecgo_dashboard
-#    (host "postgres" = nama service compose, bukan localhost)
+# 1. Buat .env.prod dari template
+cp .env.example .env.prod
+cat > .env.prod <<EOF
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=password_kuat
+POSTGRES_DB=ecgo_dashboard
+DATABASE_URL=postgresql://postgres:password_kuat@postgres:5432/ecgo_dashboard
+EOF
 
 # 2. Jalankan
-docker-compose up -d postgres
-docker-compose build
-docker-compose up -d
+docker compose --env-file .env.prod up -d postgres
+docker compose --env-file .env.prod build
+docker compose --env-file .env.prod up -d
 ```
 
-> `docker compose up` akan **error** jika `POSTGRES_PASSWORD` / `DATABASE_URL` kosong (guard `:?`). Jangan pernah commit nilai asli credential ke repo.
+> `docker compose up` akan **error** jika `POSTGRES_PASSWORD` / `DATABASE_URL` kosong (guard `:?`). Jangan pernah commit nilai asli credential ke repo. Di VM, credentials diisi via GitHub secrets oleh workflow deploy.
 
 ## Database Configuration
 
@@ -170,13 +174,13 @@ bun run start        # Run production server
 
 ## CI/CD
 
-`.github/workflows/test-ssh.yml` otomatis menjalankan lint, typecheck, test (coverage), dan build pada setiap push/PR ke `main`. Push ke `main` yang sukses juga memicu deploy ke VM via SSH (butuh secrets `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_PORT`; lokasi app di VM via repo var `APP_DIR`, default `/opt/ecgo-dashboard`).
+`.github/workflows/deploy.yml` otomatis menjalankan lint, typecheck, test (coverage), dan build pada setiap push/PR ke `main`. Push ke `main` yang sukses juga memicu deploy ke VM via SSH (butuh secrets `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_PORT`, `POSTGRES_PASSWORD`, `DATABASE_URL`; lokasi app di VM via repo var `APP_DIR`, default `/opt/ecgo-dashboard`).
 
 ## Yang Belum Selesai
 
 - [x] Unit testing (validasi Zod, logic check-in, API routes, components — 62 tests)
 - [x] Code coverage ≥ 80% (All files: 96.9% statements, 86.11% branches, 92% functions)
-- [x] CI/CD workflow auto-deploy (test-ssh.yml sudah di-upgrade)
+- [x] CI/CD workflow auto-deploy (deploy.yml sudah siap, butuh secrets)
 - [ ] E2E testing
 - [ ] Dark mode
 - [ ] Deploy ke VM staging & production (workflow siap, tinggal set secrets & repo vars)

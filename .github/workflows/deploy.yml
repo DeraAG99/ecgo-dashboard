@@ -33,11 +33,10 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Validate docker-compose
-        env:
-          POSTGRES_PASSWORD: dummy
-          DATABASE_URL: postgresql://postgres:dummy@postgres:5432/ecgo_dashboard
-        run: docker compose -f docker-compose.yml config --quiet
+      - name: Validate docker-compose (baca .env.prod)
+        run: |
+          cp .env.example .env.prod
+          docker compose -f docker-compose.yml --env-file .env.prod config --quiet
 
   deploy:
     name: Deploy to VM
@@ -57,12 +56,24 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          envs: APP_DIR
+          envs: APP_DIR,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,DATABASE_URL
           script: |
             set -e
             cd "${APP_DIR:-/opt/ecgo-dashboard}"
             git pull origin main
-            docker compose -f docker-compose.yml pull
-            docker compose -f docker-compose.yml up -d --build
+            cat > .env.prod <<EOF
+            POSTGRES_USER=${POSTGRES_USER}
+            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            POSTGRES_DB=${POSTGRES_DB}
+            DATABASE_URL=${DATABASE_URL}
+            EOF
+            docker compose -f docker-compose.yml --env-file .env.prod pull
+            docker compose -f docker-compose.yml --env-file .env.prod up -d --build
             docker image prune -f
             echo "Deploy selesai."
+        env:
+          APP_DIR: ${{ vars.APP_DIR }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

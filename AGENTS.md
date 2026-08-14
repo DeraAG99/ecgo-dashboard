@@ -100,7 +100,7 @@ npm run build
 npm run start
 ```
 
-> ⚠️ **docker-compose.yml membaca credential hanya dari file `.env`** (guard `${VAR:?}` → error jika kosong). Siapkan `cp .env.example .env` lalu isi `POSTGRES_PASSWORD` & `DATABASE_URL` (host internal `postgres`). Jangan commit nilai asli.
+> ⚠️ **docker-compose.yml membaca credential hanya dari file `.env.prod`** (gitignored, tidak di-commit). Workflow `deploy.yml` otomatis menulis `.env.prod` dari GitHub secrets sebelum deploy. Untuk testing lokal, `cp .env.example .env.prod` lalu isi nilai secara manual.
 
 ---
 
@@ -173,4 +173,4 @@ npm run test:coverage     # Coverage report
 
 ## 🚀 CI/CD
 
-Update `.github/workflows/test-ssh.yml` untuk deployment vm setelah selesai.
+Update `.github/workflows/deploy.yml` untuk deployment vm setelah selesai. Pastikan secrets `POSTGRES_PASSWORD` & `DATABASE_URL` diatur di GitHub repository secrets (Environment: production).

@@ -11,6 +11,9 @@ RUN npm install --include=dev
 # Copy source files
 COPY . .
 
+# Copy drizzle config (tambahan)
+COPY drizzle.config.ts ./
+
 # Build the application
 RUN npm run build
 
@@ -39,6 +42,7 @@ COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/types ./types
 COPY --from=builder /app/.env.example ./.env.example
+COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts 
 
 USER nextjs
 

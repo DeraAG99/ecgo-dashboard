@@ -53,6 +53,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           private_key_value: ${{ secrets.SSH_PRIVATE_KEY }}
+          private_key_filename: ${{ secrets.SSH_PRIVATE_KEY_FILENAME }} 
           port: ${{ secrets.SSH_PORT }}
           commands: |
             set -e

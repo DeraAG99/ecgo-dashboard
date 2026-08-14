@@ -31,6 +31,11 @@ describe("cabinetsQuerySchema", () => {
     expect(() => cabinetsQuerySchema.parse({ page: -1 })).toThrow()
   })
 
+  it("should reject limit above max (100)", () => {
+    expect(() => cabinetsQuerySchema.parse({ limit: 101 })).toThrow()
+    expect(cabinetsQuerySchema.parse({ limit: 100 }).limit).toBe(100)
+  })
+
   it("should reject unknown sortBy", () => {
     expect(() => cabinetsQuerySchema.parse({ sortBy: "branch" })).toThrow()
   })
@@ -71,5 +76,9 @@ describe("transactionsQuerySchema", () => {
 
   it("should reject negative limit", () => {
     expect(() => transactionsQuerySchema.parse({ limit: -5 })).toThrow()
+  })
+
+  it("should reject limit above max (100)", () => {
+    expect(() => transactionsQuerySchema.parse({ limit: 101 })).toThrow()
   })
 })

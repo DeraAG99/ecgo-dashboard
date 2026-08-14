@@ -6,6 +6,7 @@ node_modules
 .yarn/build-state.yml
 .yarn/install-state.gz
 .yarn/patches
+package-lock.json
 
 # Production builds
 .next
@@ -20,7 +21,6 @@ dist
 .env.production.local
 
 # Database
-migrations
 *.sqlite
 
 # IDE

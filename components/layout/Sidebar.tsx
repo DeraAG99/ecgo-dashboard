@@ -4,9 +4,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 const NAV_ITEMS = [
-  { href: "/", label: "Dashboard", icon: "dashboard" },
-  { href: "/cabinets", label: "Cabinet List", icon: "battery_charging_full" },
-  { href: "/transactions", label: "Transactions", icon: "receipt_long" },
+  { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
+  { href: "/dashboard/cabinets", label: "Cabinet List", icon: "battery_charging_full" },
+  { href: "/dashboard/transactions", label: "Transactions", icon: "receipt_long" },
   { href: "/maintenance", label: "Maintenance", icon: "build" },
   { href: "/settings", label: "Settings", icon: "settings" },
 ]
@@ -26,7 +26,7 @@ export default function Sidebar() {
   const pathname = usePathname()
 
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href)
+    href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href)
 
   return (
     <aside className="hidden md:flex flex-col h-full py-gutter px-4 bg-ecgo-blue text-white fixed left-0 top-0 w-sidebar-width shadow-md z-40 transition-all duration-200 ease-in-out">

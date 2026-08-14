@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useEffect, useState, useCallback } from "react"
+import { useParams, useRouter, notFound } from "next/navigation"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
 import StatusBadge from "@/components/shared/StatusBadge"
@@ -39,23 +39,34 @@ export default function CabinetDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const fetchCabinet = useCallback(async () => {
+    if (!id) return
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await fetch(`/api/cabinets/${id}`)
+      if (response.status === 404) {
+        notFound()
+        return
+      }
+      if (!response.ok) throw new Error("Cabinet tidak ditemukan")
+      setCabinet(await response.json())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan")
+    } finally {
+      setLoading(false)
+    }
+  }, [id])
+
+  useEffect(() => {
+    fetchCabinet()
+  }, [fetchCabinet])
+
   useEffect(() => {
     if (!id) return
-    const fetchCabinet = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const response = await fetch(`/api/cabinets/${id}`)
-        if (!response.ok) throw new Error("Cabinet tidak ditemukan")
-        setCabinet(await response.json())
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Terjadi kesalahan")
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchCabinet()
-  }, [id])
+    const interval = setInterval(fetchCabinet, 30000)
+    return () => clearInterval(interval)
+  }, [fetchCabinet, id])
 
   if (loading) return <LoadingSpinner />
   if (error) return <ErrorMessage message={error} />
@@ -69,7 +80,7 @@ export default function CabinetDetail() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => router.push("/cabinets")}
+            onClick={() => router.push("/dashboard/cabinets")}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container hover:bg-surface-variant text-on-surface transition-colors"
           >
             <span className="material-symbols-outlined">arrow_back</span>
@@ -153,7 +164,7 @@ export default function CabinetDetail() {
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-headline-md text-ecgo-blue">Daftar Transaksi Terakhir</h3>
           <button
-            onClick={() => router.push(`/transactions?cabinetId=${cabinet.id}`)}
+            onClick={() => router.push(`/dashboard/transactions?cabinetId=${cabinet.id}`)}
             className="text-primary font-medium text-body-sm hover:underline"
           >
             Lihat Semua

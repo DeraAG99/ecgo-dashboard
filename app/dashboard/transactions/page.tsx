@@ -50,7 +50,7 @@ function TransactionsInner() {
     const params = new URLSearchParams()
     if (debouncedSearch) params.set("search", debouncedSearch)
     if (cabinetId) params.set("cabinetId", cabinetId)
-    router.push(`/transactions?${params.toString()}`)
+    router.push(`/dashboard/transactions?${params.toString()}`)
   }, [debouncedSearch, cabinetId, router])
 
   useEffect(() => {
@@ -112,7 +112,7 @@ function TransactionsInner() {
           </div>
           <div className="relative">
             <select
-              value="all"
+              defaultValue="all"
               className="appearance-none bg-surface border border-outline-variant rounded-md pl-3 pr-8 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary h-[36px] min-w-[140px] cursor-pointer"
             >
               <option value="all">Semua Status</option>
@@ -135,6 +135,13 @@ function TransactionsInner() {
             className="w-full pl-9 pr-3 py-1.5 bg-surface rounded-md border border-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-body-sm h-[36px]"
           />
         </div>
+        <a
+          href={`/api/transactions/export?search=${encodeURIComponent(search)}&cabinetId=${encodeURIComponent(cabinetId)}`}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-ecgo-green text-white rounded-lg text-body-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap h-[36px]"
+        >
+          <span className="material-symbols-outlined text-[18px]">download</span>
+          Export CSV
+        </a>
       </div>
 
       <div className="bg-surface-container-lowest rounded-lg shadow-card border border-outline-variant overflow-hidden">

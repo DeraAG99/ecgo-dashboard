@@ -3,12 +3,12 @@
 import { usePathname } from "next/navigation"
 
 const TITLES: { match: string; title: string }[] = [
-  { match: "/cabinets/", title: "Cabinet List" },
-  { match: "/cabinets", title: "Cabinet List" },
-  { match: "/transactions", title: "Transactions" },
+  { match: "/dashboard/cabinets/", title: "Cabinet List" },
+  { match: "/dashboard/cabinets", title: "Cabinet List" },
+  { match: "/dashboard/transactions", title: "Transactions" },
+  { match: "/dashboard", title: "Dashboard" },
   { match: "/maintenance", title: "Maintenance" },
   { match: "/settings", title: "Settings" },
-  { match: "/", title: "Dashboard" },
 ]
 
 function Icon({ name, filled = false }: { name: string; filled?: boolean }) {
@@ -26,10 +26,11 @@ export default function Topbar() {
   const pathname = usePathname()
 
   const matched = TITLES.find((t) =>
-    t.match === "/" ? pathname === "/" : pathname.startsWith(t.match)
+    t.match === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(t.match)
   )
   const title = matched?.title ?? "Dashboard"
-  const isDetail = pathname.startsWith("/cabinets/") && pathname !== "/cabinets"
+  const isDetail =
+    pathname.startsWith("/dashboard/cabinets/") && pathname !== "/dashboard/cabinets"
 
   return (
     <header className="fixed top-0 right-0 w-full md:w-[calc(100%-260px)] h-16 bg-surface-container-lowest border-b border-outline-variant shadow-sm z-30 flex items-center justify-between px-gutter">

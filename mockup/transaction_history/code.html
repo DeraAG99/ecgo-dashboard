@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ECGO Operational Dashboard - Riwayat Transaksi</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#78fc9c",
+                        "outline-variant": "#bccabb",
+                        "surface": "#f7f9fc",
+                        "tertiary-fixed": "#ffd9dd",
+                        "primary-container": "#008740",
+                        "inverse-on-surface": "#eff1f4",
+                        "surface-container-low": "#f2f4f7",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb2bb",
+                        "on-secondary-fixed-variant": "#364669",
+                        "surface-bright": "#f7f9fc",
+                        "on-secondary-container": "#4b5b7f",
+                        "secondary-container": "#c4d4fe",
+                        "background": "#f7f9fc",
+                        "primary": "#006b32",
+                        "on-surface-variant": "#3d4a3e",
+                        "on-surface": "#191c1e",
+                        "inverse-primary": "#5adf82",
+                        "surface-container-highest": "#e0e3e6",
+                        "on-primary-fixed": "#00210b",
+                        "surface-tint": "#006d33",
+                        "error": "#ba1a1a",
+                        "secondary": "#4e5e82",
+                        "surface-dim": "#d8dadd",
+                        "on-tertiary-fixed-variant": "#8a1636",
+                        "outline": "#6d7b6d",
+                        "on-tertiary-fixed": "#400012",
+                        "on-primary-container": "#f7fff3",
+                        "secondary-fixed-dim": "#b6c6f0",
+                        "secondary-fixed": "#d8e2ff",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed": "#071b3b",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-container": "#fffbff",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "tertiary": "#a72e4a",
+                        "inverse-surface": "#2d3133",
+                        "primary-fixed-dim": "#5adf82",
+                        "surface-container": "#eceef1",
+                        "on-background": "#191c1e",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#005225",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#c84761",
+                        "surface-container-high": "#e6e8eb",
+                        "surface-variant": "#e0e3e6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sidebar-width": "260px",
+                        "base": "4px",
+                        "container-max": "1440px",
+                        "gutter": "24px",
+                        "margin-page": "32px"
+                    },
+                    "fontFamily": {
+                        "data-mono": ["JetBrains Mono"],
+                        "label-caps": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "display": ["Inter"]
+                    },
+                    "fontSize": {
+                        "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Custom scrollbar for table container */
+        .table-scroll::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .table-scroll::-webkit-scrollbar-track {
+            background: #f7f9fc;
+        }
+        .table-scroll::-webkit-scrollbar-thumb {
+            background-color: #bccabb;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-sm text-body-sm antialiased">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-sidebar-width bg-secondary shadow-md flex flex-col py-gutter px-4 z-20">
+<!-- Brand / Header -->
+<div class="flex items-center gap-4 mb-8 px-2">
+<div class="w-12 h-12 rounded-lg bg-surface-container-lowest flex items-center justify-center overflow-hidden shrink-0">
+<img alt="ECGO Logo" class="w-full h-full object-contain p-2" data-alt="A minimalist, modern vector logo for an electric vehicle battery swapping network, using sharp geometric lines and a bright green accent on a pure white background. High contrast, clean edges, corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzdeCjdusTrmeX6lpA0NGnz79kUjcfyNo445xGc0HZXkFxwRfXtRQzLxDAtvb4NKXNyWWeVBFdm_KURFFD_6qyo9KghzqDpbOeiiBurkIKaIkDPkDwC0mwGmnO27vJ1FKdyWpRbGGSUO-FrMRrO3-YwPD--Oh18EH3PND-bntHhitnHzi5lr-iyWQ92iQevk2iCwSJ5gu0e7p2LfkbrtoSDQ10win-QizKdbsh0pxUzRHlxI6jgHk6"/>
+</div>
+<div>
+<h1 class="font-display text-display text-on-primary-fixed leading-tight" style="font-size: 20px;">ECGO Swap</h1>
+<p class="text-on-secondary/70 font-label-caps text-label-caps mt-1 uppercase tracking-wider text-[10px]">Operational Dashboard</p>
+</div>
+</div>
+<!-- Main Navigation -->
+<ul class="flex-1 flex flex-col gap-2">
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-secondary/70 hover:text-on-secondary hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-lg text-body-lg">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-secondary/70 hover:text-on-secondary hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">battery_charging_full</span>
+<span class="font-body-lg text-body-lg">Cabinet List</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-md border-l-4 border-primary bg-white/10 text-primary-fixed font-bold transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+<span class="font-body-lg text-body-lg">Transactions</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-secondary/70 hover:text-on-secondary hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">build</span>
+<span class="font-body-lg text-body-lg">Maintenance</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-on-secondary/70 hover:text-on-secondary hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-lg text-body-lg">Settings</span>
+</a>
+</li>
+</ul>
+<!-- CTA Button -->
+<div class="mt-auto mb-6 px-2">
+<button class="w-full bg-primary text-on-primary font-body-lg text-body-lg font-medium py-3 rounded-lg hover:bg-primary/90 transition-colors shadow-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">add</span>
+                Add Station
+            </button>
+</div>
+<!-- Footer Navigation -->
+<ul class="flex flex-col gap-2 border-t border-white/10 pt-4 mt-2">
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-on-secondary/70 hover:text-on-secondary hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]">help</span>
+<span class="font-body-sm text-body-sm">Support</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-on-secondary/70 hover:text-on-secondary hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span class="font-body-sm text-body-sm">Sign Out</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-260px)] h-16 bg-surface-container-lowest border-b border-outline-variant shadow-sm flex items-center justify-between px-gutter z-10">
+<!-- Search & Context -->
+<div class="flex items-center gap-6 flex-1">
+<h2 class="font-headline-lg text-headline-lg text-secondary hidden lg:block mr-4 truncate max-w-[300px]">ECGO Operational Dashboard</h2>
+<div class="relative w-full max-w-md hidden md:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface rounded-full border border-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-body-sm transition-shadow" placeholder="Search transactions, users, or cabinets..." type="text"/>
+</div>
+</div>
+<!-- Navigation Links (Top) -->
+<nav class="hidden xl:flex items-center gap-6 mx-8">
+<a class="text-on-surface-variant hover:text-primary cursor-pointer transition-colors active:opacity-80 pb-1 font-body-sm text-body-sm" href="#">Overview</a>
+<a class="text-on-surface-variant hover:text-primary cursor-pointer transition-colors active:opacity-80 pb-1 font-body-sm text-body-sm" href="#">Live Maps</a>
+<a class="text-on-surface-variant hover:text-primary cursor-pointer transition-colors active:opacity-80 pb-1 font-body-sm text-body-sm" href="#">Analytics</a>
+</nav>
+<!-- Actions & Profile -->
+<div class="flex items-center gap-4 shrink-0">
+<button class="hidden sm:flex items-center gap-2 px-4 py-1.5 rounded border border-outline-variant text-primary font-body-sm text-body-sm font-medium hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-sm">refresh</span>
+                Refresh Data
+            </button>
+<div class="flex items-center gap-2 border-l border-outline-variant pl-4 ml-2">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border border-surface-container-lowest"></span>
+</button>
+<button class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-primary overflow-hidden transition-colors border border-outline-variant">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-[260px] pt-16 min-h-screen p-gutter">
+<!-- Page Header -->
+<div class="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-1">Riwayat Transaksi Lengkap</h1>
+<p class="text-on-surface-variant font-body-sm text-body-sm">Monitor and verify all battery swap operations across the network.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded shadow-sm hover:bg-surface-container-low transition-colors text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                    Export CSV
+                </button>
+</div>
+</div>
+<!-- Filter & Search Bar -->
+<div class="bg-surface-container-lowest rounded-lg shadow-sm border border-outline-variant p-4 mb-6 flex flex-wrap gap-4 items-center justify-between">
+<div class="flex flex-wrap gap-4 items-center flex-1">
+<!-- Date Range -->
+<div class="flex items-center gap-2 bg-surface rounded-md border border-outline-variant px-3 py-1.5 min-w-[240px]">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">calendar_today</span>
+<input class="bg-transparent border-none focus:ring-0 p-0 text-body-sm font-body-sm text-on-surface w-full h-6 outline-none" placeholder="Start Date - End Date" type="text" value="Oct 24, 2023 - Oct 31, 2023"/>
+</div>
+<!-- Status Filter -->
+<div class="relative">
+<select class="appearance-none bg-surface border border-outline-variant rounded-md pl-3 pr-8 py-1.5 text-body-sm font-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary h-[36px] min-w-[140px] cursor-pointer">
+<option value="all">Semua Status</option>
+<option value="success">Sukses</option>
+<option value="failed">Gagal</option>
+<option value="pending">Tertunda</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[20px]">arrow_drop_down</span>
+</div>
+<!-- Location Filter -->
+<div class="relative hidden lg:block">
+<select class="appearance-none bg-surface border border-outline-variant rounded-md pl-3 pr-8 py-1.5 text-body-sm font-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary h-[36px] min-w-[160px] cursor-pointer">
+<option value="all">Semua Lokasi</option>
+<option value="jkt-sel">Jakarta Selatan</option>
+<option value="jkt-pus">Jakarta Pusat</option>
+<option value="bdg">Bandung</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[20px]">arrow_drop_down</span>
+</div>
+</div>
+<!-- Specific Search -->
+<div class="relative w-full sm:w-auto min-w-[260px]">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">badge</span>
+<input class="w-full pl-9 pr-3 py-1.5 bg-surface rounded-md border border-outline-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-body-sm h-[36px]" placeholder="Cari User ID atau ID Transaksi" type="text"/>
+</div>
+</div>
+<!-- Data Table Card -->
+<div class="bg-surface-container-lowest rounded-lg shadow-[0_4px_10px_rgba(0,0,0,0.04)] border border-outline-variant overflow-hidden flex flex-col">
+<div class="table-scroll overflow-x-auto w-full">
+<table class="w-full text-left border-collapse min-w-[1000px]">
+<thead>
+<tr class="bg-surface border-b border-outline-variant">
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase tracking-wider whitespace-nowrap">ID Transaksi</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase tracking-wider whitespace-nowrap">Waktu</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase tracking-wider whitespace-nowrap">User ID</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase tracking-wider whitespace-nowrap">Lokasi Cabinet</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase tracking-wider whitespace-nowrap text-center">Baterai Masuk</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase tracking-wider whitespace-nowrap text-center">Baterai Keluar</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase tracking-wider whitespace-nowrap text-right">Biaya</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase tracking-wider whitespace-nowrap text-center">Status</th>
+<th class="py-4 px-4"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/50">
+<!-- Row 1 -->
+<tr class="hover:bg-surface/50 transition-colors group">
+<td class="py-3 px-6">
+<span class="font-data-mono text-data-mono text-on-surface">TRX-8924-A1</span>
+</td>
+<td class="py-3 px-6">
+<div class="flex flex-col">
+<span class="text-on-surface font-body-sm">31 Okt 2023</span>
+<span class="text-on-surface-variant text-xs">14:32:05 WIB</span>
+</div>
+</td>
+<td class="py-3 px-6">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container text-xs font-bold">JD</div>
+<span class="font-data-mono text-data-mono text-on-surface">USR-4421</span>
+</div>
+</td>
+<td class="py-3 px-6">
+<div class="flex flex-col">
+<span class="text-on-surface font-medium font-body-sm">CBT-SUD-01</span>
+<span class="text-on-surface-variant text-xs truncate max-w-[150px]">Sudirman Station, JKT</span>
+</div>
+</td>
+<td class="py-3 px-6 text-center">
+<div class="inline-flex flex-col items-center justify-center bg-surface-container p-1.5 rounded min-w-[60px]">
+<span class="font-data-mono text-data-mono text-on-surface">BAT-11A</span>
+<span class="text-[10px] font-bold text-error mt-0.5 flex items-center gap-0.5"><span class="w-1.5 h-1.5 rounded-full bg-error"></span> 12%</span>
+</div>
+</td>
+<td class="py-3 px-6 text-center">
+<div class="inline-flex flex-col items-center justify-center bg-surface-container p-1.5 rounded min-w-[60px]">
+<span class="font-data-mono text-data-mono text-on-surface">BAT-94C</span>
+<span class="text-[10px] font-bold text-primary mt-0.5 flex items-center gap-0.5"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span> 100%</span>
+</div>
+</td>
+<td class="py-3 px-6 text-right">
+<span class="font-data-mono text-data-mono text-on-surface">Rp 10.000</span>
+</td>
+<td class="py-3 px-6 text-center">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary font-label-caps text-label-caps">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                    SUKSES
+                                </span>
+</td>
+<td class="py-3 px-4 text-center">
+<button class="p-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 (Failed) -->
+<tr class="hover:bg-surface/50 transition-colors group">
+<td class="py-3 px-6">
+<span class="font-data-mono text-data-mono text-on-surface">TRX-8923-B2</span>
+</td>
+<td class="py-3 px-6">
+<div class="flex flex-col">
+<span class="text-on-surface font-body-sm">31 Okt 2023</span>
+<span class="text-on-surface-variant text-xs">13:15:44 WIB</span>
+</div>
+</td>
+<td class="py-3 px-6">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]">person</span>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface">USR-9932</span>
+</div>
+</td>
+<td class="py-3 px-6">
+<div class="flex flex-col">
+<span class="text-on-surface font-medium font-body-sm">CBT-KMG-04</span>
+<span class="text-on-surface-variant text-xs truncate max-w-[150px]">Kemang Raya, JKT</span>
+</div>
+</td>
+<td class="py-3 px-6 text-center">
+<div class="inline-flex flex-col items-center justify-center bg-error/10 p-1.5 rounded min-w-[60px] border border-error/20">
+<span class="font-data-mono text-data-mono text-on-surface">BAT-42D</span>
+<span class="text-[10px] text-error mt-0.5">Jammed</span>
+</div>
+</td>
+<td class="py-3 px-6 text-center">
+<span class="text-on-surface-variant font-body-sm">-</span>
+</td>
+<td class="py-3 px-6 text-right">
+<span class="font-data-mono text-data-mono text-on-surface">Rp 0</span>
+</td>
+<td class="py-3 px-6 text-center">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error/10 text-error font-label-caps text-label-caps">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                                    GAGAL
+                                </span>
+</td>
+<td class="py-3 px-4 text-center">
+<button class="p-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface/50 transition-colors group">
+<td class="py-3 px-6">
+<span class="font-data-mono text-data-mono text-on-surface">TRX-8922-C3</span>
+</td>
+<td class="py-3 px-6">
+<div class="flex flex-col">
+<span class="text-on-surface font-body-sm">31 Okt 2023</span>
+<span class="text-on-surface-variant text-xs">11:05:12 WIB</span>
+</div>
+</td>
+<td class="py-3 px-6">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container text-xs font-bold">AS</div>
+<span class="font-data-mono text-data-mono text-on-surface">USR-1184</span>
+</div>
+</td>
+<td class="py-3 px-6">
+<div class="flex flex-col">
+<span class="text-on-surface font-medium font-body-sm">CBT-SUD-02</span>
+<span class="text-on-surface-variant text-xs truncate max-w-[150px]">Sudirman Station, JKT</span>
+</div>
+</td>
+<td class="py-3 px-6 text-center">
+<div class="inline-flex flex-col items-center justify-center bg-surface-container p-1.5 rounded min-w-[60px]">
+<span class="font-data-mono text-data-mono text-on-surface">BAT-77B</span>
+<span class="text-[10px] font-bold text-error mt-0.5 flex items-center gap-0.5"><span class="w-1.5 h-1.5 rounded-full bg-error"></span> 5%</span>
+</div>
+</td>
+<td class="py-3 px-6 text-center">
+<div class="inline-flex flex-col items-center justify-center bg-surface-container p-1.5 rounded min-w-[60px]">
+<span class="font-data-mono text-data-mono text-on-surface">BAT-12A</span>
+<span class="text-[10px] font-bold text-primary mt-0.5 flex items-center gap-0.5"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span> 98%</span>
+</div>
+</td>
+<td class="py-3 px-6 text-right">
+<span class="font-data-mono text-data-mono text-on-surface">Rp 10.000</span>
+</td>
+<td class="py-3 px-6 text-center">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary font-label-caps text-label-caps">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                    SUKSES
+                                </span>
+</td>
+<td class="py-3 px-4 text-center">
+<button class="p-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface/50 transition-colors group">
+<td class="py-3 px-6">
+<span class="font-data-mono text-data-mono text-on-surface">TRX-8921-D4</span>
+</td>
+<td class="py-3 px-6">
+<div class="flex flex-col">
+<span class="text-on-surface font-body-sm">31 Okt 2023</span>
+<span class="text-on-surface-variant text-xs">09:42:30 WIB</span>
+</div>
+</td>
+<td class="py-3 px-6">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container text-xs font-bold">MK</div>
+<span class="font-data-mono text-data-mono text-on-surface">USR-5561</span>
+</div>
+</td>
+<td class="py-3 px-6">
+<div class="flex flex-col">
+<span class="text-on-surface font-medium font-body-sm">CBT-THB-01</span>
+<span class="text-on-surface-variant text-xs truncate max-w-[150px]">Thamrin City, JKT</span>
+</div>
+</td>
+<td class="py-3 px-6 text-center">
+<div class="inline-flex flex-col items-center justify-center bg-surface-container p-1.5 rounded min-w-[60px]">
+<span class="font-data-mono text-data-mono text-on-surface">BAT-33C</span>
+<span class="text-[10px] font-bold text-error mt-0.5 flex items-center gap-0.5"><span class="w-1.5 h-1.5 rounded-full bg-error"></span> 20%</span>
+</div>
+</td>
+<td class="py-3 px-6 text-center">
+<div class="inline-flex flex-col items-center justify-center bg-surface-container p-1.5 rounded min-w-[60px]">
+<span class="font-data-mono text-data-mono text-on-surface">BAT-88B</span>
+<span class="text-[10px] font-bold text-primary mt-0.5 flex items-center gap-0.5"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span> 100%</span>
+</div>
+</td>
+<td class="py-3 px-6 text-right">
+<span class="font-data-mono text-data-mono text-on-surface">Rp 10.000</span>
+</td>
+<td class="py-3 px-6 text-center">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary font-label-caps text-label-caps">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                    SUKSES
+                                </span>
+</td>
+<td class="py-3 px-4 text-center">
+<button class="p-1.5 rounded text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="border-t border-outline-variant bg-surface-container-lowest px-6 py-4 flex items-center justify-between">
+<div class="text-on-surface-variant font-body-sm text-body-sm">
+                    Menampilkan <span class="font-medium text-on-surface">1</span> hingga <span class="font-medium text-on-surface">10</span> dari <span class="font-medium text-on-surface">1,248</span> transaksi
+                </div>
+<div class="flex items-center gap-2">
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed" disabled="">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded bg-primary text-on-primary font-body-sm text-body-sm font-medium">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-transparent text-on-surface-variant hover:bg-surface-container font-body-sm text-body-sm">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-transparent text-on-surface-variant hover:bg-surface-container font-body-sm text-body-sm">3</button>
+<span class="text-on-surface-variant px-1">...</span>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-transparent text-on-surface-variant hover:bg-surface-container font-body-sm text-body-sm">125</button>
+</div>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-surface-container">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

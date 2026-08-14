@@ -7,12 +7,24 @@
     @apply box-border;
   }
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-surface text-on-surface antialiased;
   }
 }
 
-@layer utilities {
-  .container {
-    @apply mx-auto px-4 sm:px-6 lg:px-8;
+@layer components {
+  .card {
+    @apply bg-surface-container-lowest rounded-xl shadow-card border border-outline-variant/30;
+  }
+  .card-hover {
+    @apply transition-all hover:shadow-card-hover;
+  }
+  .label-caps {
+    @apply text-label-caps uppercase tracking-wider;
+  }
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-label-caps;
+  }
+  .status-dot {
+    @apply w-1.5 h-1.5 rounded-full;
   }
 }

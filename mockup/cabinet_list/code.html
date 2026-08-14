@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Daftar Cabinet - ECGO Operational Dashboard</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#d8dadd",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#c4d4fe",
+                        "on-primary-container": "#f7fff3",
+                        "surface-variant": "#e0e3e6",
+                        "on-primary-fixed": "#00210b",
+                        "surface-container": "#eceef1",
+                        "error-container": "#ffdad6",
+                        "surface-container-low": "#f2f4f7",
+                        "secondary": "#4e5e82",
+                        "primary-fixed-dim": "#5adf82",
+                        "inverse-on-surface": "#eff1f4",
+                        "inverse-surface": "#2d3133",
+                        "tertiary-fixed-dim": "#ffb2bb",
+                        "outline-variant": "#bccabb",
+                        "secondary-fixed-dim": "#b6c6f0",
+                        "on-error-container": "#93000a",
+                        "surface-container-highest": "#e0e3e6",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#400012",
+                        "outline": "#6d7b6d",
+                        "on-error": "#ffffff",
+                        "background": "#f7f9fc",
+                        "on-secondary-fixed": "#071b3b",
+                        "surface-container-high": "#e6e8eb",
+                        "on-primary-fixed-variant": "#005225",
+                        "surface": "#f7f9fc",
+                        "tertiary-fixed": "#ffd9dd",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-surface-variant": "#3d4a3e",
+                        "on-secondary-container": "#4b5b7f",
+                        "tertiary-container": "#c84761",
+                        "inverse-primary": "#5adf82",
+                        "on-surface": "#191c1e",
+                        "surface-bright": "#f7f9fc",
+                        "primary": "#006b32",
+                        "on-background": "#191c1e",
+                        "on-secondary-fixed-variant": "#364669",
+                        "on-tertiary-fixed-variant": "#8a1636",
+                        "secondary-fixed": "#d8e2ff",
+                        "on-tertiary-container": "#fffbff",
+                        "surface-tint": "#006d33",
+                        "tertiary": "#a72e4a",
+                        "primary-fixed": "#78fc9c",
+                        "primary-container": "#008740"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "container-max": "1440px",
+                        "base": "4px",
+                        "margin-page": "32px",
+                        "sidebar-width": "260px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "data-mono": ["JetBrains Mono"],
+                        "display": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "data-mono": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "display": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: #F5F7FA; }
+        
+        /* Custom Shadows for UI Lift */
+        .shadow-lift { box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04); }
+        .shadow-overlay { box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.12); }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- SideNavBar (Shared Component) -->
+<!-- Content: Exact Labels/Icons. Style: style_* bindings -->
+<nav class="fixed left-0 top-0 h-full w-sidebar-width bg-secondary dark:bg-on-secondary-fixed flex flex-col py-gutter px-4 shadow-md z-50">
+<!-- Brand / Header -->
+<div class="flex items-center gap-3 mb-8 px-2">
+<div class="w-10 h-10 rounded-lg bg-surface-container-lowest flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-2xl font-bold" data-weight="fill">bolt</span>
+</div>
+<div>
+<h1 class="font-display text-[20px] leading-tight text-on-primary-fixed tracking-tight font-extrabold text-white">ECGO Swap</h1>
+<p class="font-body-sm text-body-sm text-on-secondary/70">Operational Dashboard</p>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<ul class="flex-1 space-y-2">
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-secondary/70 hover:text-on-secondary transition-colors hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-lg text-body-lg">Dashboard</span>
+</a>
+</li>
+<!-- ACTIVE STATE: Cabinet List -->
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg border-l-4 border-primary bg-white/10 text-primary-fixed font-bold hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">battery_charging_full</span>
+<span class="font-body-lg text-body-lg">Cabinet List</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-secondary/70 hover:text-on-secondary transition-colors hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-body-lg text-body-lg">Transactions</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-secondary/70 hover:text-on-secondary transition-colors hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">build</span>
+<span class="font-body-lg text-body-lg">Maintenance</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-secondary/70 hover:text-on-secondary transition-colors hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-lg text-body-lg">Settings</span>
+</a>
+</li>
+</ul>
+<!-- Footer / CTA -->
+<div class="mt-auto space-y-4 pt-4 border-t border-white/10">
+<button class="w-full py-2.5 bg-primary text-white rounded-lg font-body-sm font-semibold shadow hover:bg-primary-container transition-colors">
+                Add Station
+            </button>
+<ul class="space-y-2">
+<li>
+<a class="flex items-center gap-3 px-3 py-2 text-on-secondary/70 hover:text-on-secondary transition-colors text-sm" href="#">
+<span class="material-symbols-outlined text-[20px]">help</span>
+<span>Support</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 text-on-secondary/70 hover:text-on-secondary transition-colors text-sm" href="#">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span>Sign Out</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- TopNavBar (Shared Component) -->
+<header class="fixed top-0 right-0 w-[calc(100%-260px)] h-16 bg-surface-container-lowest dark:bg-surface-container-low border-b border-outline-variant shadow-sm flex items-center justify-between px-gutter ml-sidebar-width z-40">
+<!-- Left: Product Name / Breadcrumbs -->
+<div class="flex items-center gap-4">
+<div class="text-sm font-medium text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">home</span>
+<span>Home</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="text-primary font-semibold">Cabinet List</span>
+</div>
+</div>
+<!-- Center: Search (Optional layout flexibility, keeping it simple here as it's typically combined with links if needed, but JSON specifies 'on_left') -->
+<!-- Navigation Links (Top) -->
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-on-surface-variant hover:text-primary cursor-pointer transition-colors font-body-sm active:opacity-80 transition-opacity text-sm" href="#">Overview</a>
+<a class="text-on-surface-variant hover:text-primary cursor-pointer transition-colors font-body-sm active:opacity-80 transition-opacity text-sm" href="#">Live Maps</a>
+<a class="text-on-surface-variant hover:text-primary cursor-pointer transition-colors font-body-sm active:opacity-80 transition-opacity text-sm" href="#">Analytics</a>
+</nav>
+<!-- Right: Actions -->
+<div class="flex items-center gap-4">
+<button class="text-primary font-body-sm font-medium text-sm hover:opacity-80 transition-opacity flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+                Refresh Data
+            </button>
+<div class="w-px h-6 bg-outline-variant mx-1"></div>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden border border-outline-variant ml-2">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a female logistics operational manager with a neutral expression. She is wearing a modern dark blue blazer over a crisp white shirt. The background is a slightly blurred modern office space with bright, high-key white lighting. The overall mood is confident, corporate, and clean." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA88Yj4VrHOlDQNyl1z0H3kn-FrvrDjOq78yLJBgiHsMUcy3cPQ88FgXdUcJGpX1at83eTJB_q5LLrjqdAWc60xJROjkCaLpt0qodRFAAlUUElmHhGIokB0_ZvHdPBKLHW1EWWQXxc-C5vHcBQ8EhDQaHjkFQa6uyNxyOF_2f34E-P-ZM-i453eQKjTdkAw30ZP-bg1XC-4rnqAQuLjgIHNeVjbxulnUWT1abgUEeD1llCfLneGP5ax"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-sidebar-width pt-[88px] px-gutter pb-gutter min-h-screen">
+<!-- Header Section: Title & Controls -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+<div>
+<h2 class="font-display text-display text-on-background">Daftar Cabinet</h2>
+<p class="font-body-sm text-on-surface-variant mt-1">Manage and monitor all deployed battery swap stations.</p>
+</div>
+<div class="flex flex-col sm:flex-row gap-3">
+<!-- Search -->
+<div class="relative min-w-[280px]">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-on-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm" placeholder="Cari kode cabinet atau cabang..." type="text"/>
+</div>
+<!-- Filter -->
+<div class="relative">
+<select class="appearance-none w-full sm:w-auto pl-4 pr-10 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-sm text-on-background font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-sm cursor-pointer">
+<option value="ALL">Status: ALL</option>
+<option value="ONLINE">ONLINE</option>
+<option value="OFFLINE">OFFLINE</option>
+<option value="MAINTENANCE">MAINTENANCE</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Main Data Table Container (Lifted Card) -->
+<div class="bg-surface-container-lowest rounded-xl shadow-lift border border-outline-variant overflow-hidden mb-6">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-[#1A2B4C]/5 border-b border-outline-variant">
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase">Kode Cabinet</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase">Cabang</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase">Status</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase">Slot Terisi</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase">Swap 24 Jam</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase">Heartbeat Terakhir</th>
+<th class="py-4 px-6 font-label-caps text-label-caps text-secondary/80 uppercase text-right">Aksi</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-on-background divide-y divide-outline-variant/50">
+<!-- Row 1: ONLINE -->
+<tr class="hover:bg-[#F5F7FA] transition-colors group">
+<td class="py-4 px-6 font-data-mono font-medium">CBT-001</td>
+<td class="py-4 px-6 font-medium">Kemayoran Utama</td>
+<td class="py-4 px-6">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium text-xs border border-primary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                    ONLINE
+                                </div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-2">
+<div class="w-16 h-2 bg-surface-variant rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 66%"></div>
+</div>
+<span class="font-data-mono text-xs">8/12</span>
+</div>
+</td>
+<td class="py-4 px-6 font-data-mono">147</td>
+<td class="py-4 px-6 text-on-surface-variant text-sm">2 menit lalu</td>
+<td class="py-4 px-6 text-right">
+<button class="text-secondary hover:text-primary transition-colors opacity-0 group-hover:opacity-100 p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: OFFLINE -->
+<tr class="hover:bg-[#F5F7FA] transition-colors group bg-surface-container-low/50">
+<td class="py-4 px-6 font-data-mono font-medium">CBT-042</td>
+<td class="py-4 px-6 font-medium text-on-surface-variant">Sudirman Hub</td>
+<td class="py-4 px-6">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-variant/50 text-secondary font-medium text-xs border border-outline-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                    OFFLINE
+                                </div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-2 opacity-50">
+<div class="w-16 h-2 bg-surface-variant rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 33%"></div>
+</div>
+<span class="font-data-mono text-xs">4/12</span>
+</div>
+</td>
+<td class="py-4 px-6 font-data-mono opacity-50">12</td>
+<td class="py-4 px-6 text-error text-sm font-medium">4 jam lalu</td>
+<td class="py-4 px-6 text-right">
+<button class="text-secondary hover:text-primary transition-colors opacity-0 group-hover:opacity-100 p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: MAINTENANCE -->
+<tr class="hover:bg-[#F5F7FA] transition-colors group">
+<td class="py-4 px-6 font-data-mono font-medium">CBT-018</td>
+<td class="py-4 px-6 font-medium">Blok M Square</td>
+<td class="py-4 px-6">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary-container/10 text-tertiary-container font-medium text-xs border border-tertiary-container/20">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary-container"></span>
+                                    MAINTENANCE
+                                </div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-2">
+<div class="w-16 h-2 bg-surface-variant rounded-full overflow-hidden">
+<div class="bg-tertiary-container h-full rounded-full" style="width: 10%"></div>
+</div>
+<span class="font-data-mono text-xs">0/12</span>
+</div>
+</td>
+<td class="py-4 px-6 font-data-mono text-on-surface-variant">0</td>
+<td class="py-4 px-6 text-on-surface-variant text-sm">1 jam lalu</td>
+<td class="py-4 px-6 text-right">
+<button class="text-secondary hover:text-primary transition-colors opacity-0 group-hover:opacity-100 p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: ONLINE -->
+<tr class="hover:bg-[#F5F7FA] transition-colors group">
+<td class="py-4 px-6 font-data-mono font-medium">CBT-105</td>
+<td class="py-4 px-6 font-medium">Gatot Subroto</td>
+<td class="py-4 px-6">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium text-xs border border-primary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                    ONLINE
+                                </div>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-2">
+<div class="w-16 h-2 bg-surface-variant rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 90%"></div>
+</div>
+<span class="font-data-mono text-xs">11/12</span>
+</div>
+</td>
+<td class="py-4 px-6 font-data-mono">210</td>
+<td class="py-4 px-6 text-on-surface-variant text-sm">1 menit lalu</td>
+<td class="py-4 px-6 text-right">
+<button class="text-secondary hover:text-primary transition-colors opacity-0 group-hover:opacity-100 p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="px-6 py-4 border-t border-outline-variant bg-surface-container-lowest flex items-center justify-between">
+<span class="font-body-sm text-sm text-on-surface-variant">Menampilkan 1-4 dari 50 data</span>
+<div class="flex items-center gap-2">
+<button class="p-1.5 rounded border border-outline-variant text-outline disabled:opacity-50 hover:bg-surface-container-low transition-colors" disabled="">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<button class="p-1.5 rounded border border-outline-variant text-secondary hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Demonstration of other states (normally hidden or conditional) -->
+<div class="mt-12 mb-4">
+<h3 class="font-headline-md text-headline-md text-outline mb-4">UI States Showcase</h3>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+<!-- Loading State -->
+<div class="bg-surface-container-lowest rounded-xl shadow-lift border border-outline-variant p-6 flex flex-col gap-4">
+<h4 class="font-label-caps text-label-caps text-secondary/80 uppercase">Loading State</h4>
+<div class="animate-pulse space-y-4 w-full">
+<div class="h-8 bg-surface-container rounded w-full"></div>
+<div class="h-10 bg-surface-container rounded w-full"></div>
+<div class="h-10 bg-surface-container rounded w-full"></div>
+<div class="h-10 bg-surface-container rounded w-full"></div>
+</div>
+</div>
+<!-- Empty State -->
+<div class="bg-surface-container-lowest rounded-xl shadow-lift border border-outline-variant p-8 flex flex-col items-center justify-center text-center min-h-[300px]">
+<div class="w-24 h-24 bg-surface-container-low rounded-full flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-[48px] text-outline-variant">battery_0_bar</span>
+</div>
+<h4 class="font-headline-md text-on-background mb-2">Belum ada cabinet terdaftar</h4>
+<p class="font-body-sm text-on-surface-variant mb-6 max-w-[200px]">Tambahkan stasiun baru untuk mulai memantau operasional swap.</p>
+<button class="px-4 py-2 bg-primary text-white rounded-lg font-body-sm font-semibold shadow hover:bg-primary-container transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    Tambah Cabinet
+                </button>
+</div>
+<!-- Error State -->
+<div class="bg-surface-container-lowest rounded-xl shadow-lift border border-outline-variant p-8 flex flex-col items-center justify-center text-center min-h-[300px]">
+<div class="w-24 h-24 bg-error-container rounded-full flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-[48px] text-error">wifi_off</span>
+</div>
+<h4 class="font-headline-md text-on-background mb-2">Gagal memuat data</h4>
+<p class="font-body-sm text-on-surface-variant mb-6 max-w-[250px]">Terjadi kesalahan saat terhubung ke server operasional. Silakan coba lagi.</p>
+<button class="px-4 py-2 bg-surface-container-lowest border border-outline text-secondary rounded-lg font-body-sm font-semibold hover:bg-surface-container-low transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+                    Coba Lagi
+                </button>
+</div>
+</div>
+</main>
+</body></html>

@@ -33,10 +33,8 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Validate docker-compose (baca .env.prod)
-        run: |
-          cp .env.example .env.prod
-          docker compose -f docker-compose.yml --env-file .env.prod config --quiet
+      - name: Validate docker-compose
+        run: docker compose -f docker-compose.yml config --quiet
 
   deploy:
     name: Deploy to VM
@@ -49,31 +47,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Deploy via Cloudflare Tunnel
+        uses: and-fm/cloudflared-ssh-action@v3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          private_key_value: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          envs: APP_DIR,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,DATABASE_URL
-          script: |
+          commands: |
             set -e
             cd "${APP_DIR:-/opt/ecgo-dashboard}"
             git pull origin main
-            cat > .env.prod <<EOF
-            POSTGRES_USER=${POSTGRES_USER}
-            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-            POSTGRES_DB=${POSTGRES_DB}
-            DATABASE_URL=${DATABASE_URL}
-            EOF
-            docker compose -f docker-compose.yml --env-file .env.prod pull
-            docker compose -f docker-compose.yml --env-file .env.prod up -d --build
+            docker compose --env-file .env.prod pull
+            docker compose --env-file .env.prod up -d --build
             docker image prune -f
-            echo "Deploy selesai."
-        env:
-          APP_DIR: ${{ vars.APP_DIR }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+            echo "✅ Deploy selesai!"

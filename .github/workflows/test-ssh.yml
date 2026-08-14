@@ -32,10 +32,11 @@ jobs:
 
       - name: Build
         run: bun run build
-        env:
-          DATABASE_URL: REDACTED
 
       - name: Validate docker-compose
+        env:
+          POSTGRES_PASSWORD: dummy
+          DATABASE_URL: postgresql://postgres:dummy@postgres:5432/ecgo_dashboard
         run: docker compose -f docker-compose.yml config --quiet
 
   deploy:
@@ -64,4 +65,4 @@ jobs:
             docker compose -f docker-compose.yml pull
             docker compose -f docker-compose.yml up -d --build
             docker image prune -f
-            echo "Deploy selesai. Aplikasi berjalan di port 3000."
+            echo "Deploy selesai."

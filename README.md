@@ -36,11 +36,22 @@ npm run dev
 
 `docker-compose.yml` menyediakan postgres internal di port 5432 (di-mapping ke host 5433 agar tidak bentrok dengan postgres dev). Dipakai saat deployment ke VM.
 
+Credential dibaca **hanya dari file `.env`** (bukan di-commit). Siapkan dulu:
+
 ```bash
+# 1. Buat .env dari template lalu isi POSTGRES_PASSWORD & DATABASE_URL
+cp .env.example .env
+#    POSTGRES_PASSWORD=password_kuat
+#    DATABASE_URL=postgresql://postgres:password_kuat@postgres:5432/ecgo_dashboard
+#    (host "postgres" = nama service compose, bukan localhost)
+
+# 2. Jalankan
 docker-compose up -d postgres
 docker-compose build
 docker-compose up -d
 ```
+
+> `docker compose up` akan **error** jika `POSTGRES_PASSWORD` / `DATABASE_URL` kosong (guard `:?`). Jangan pernah commit nilai asli credential ke repo.
 
 ## Database Configuration
 
@@ -50,7 +61,7 @@ docker-compose up -d
 | Mode | Host | Port | Database | User | Password |
 |------|------|------|----------|------|----------|
 | Dev | localhost | 5432 | ecgo_dashboard | postgres | password |
-| VM (Docker) | localhost (host mapping) | 5433 | ecgo_dashboard | postgres | postgres |
+| VM (Docker) | localhost (host mapping) | 5433 | ecgo_dashboard | postgres | dari `.env` |
 
 > Kedua mode memakai skema & seed script yang sama; perbedaan hanya di `DATABASE_URL`.
 

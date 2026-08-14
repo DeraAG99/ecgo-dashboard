@@ -100,6 +100,8 @@ npm run build
 npm run start
 ```
 
+> ⚠️ **docker-compose.yml membaca credential hanya dari file `.env`** (guard `${VAR:?}` → error jika kosong). Siapkan `cp .env.example .env` lalu isi `POSTGRES_PASSWORD` & `DATABASE_URL` (host internal `postgres`). Jangan commit nilai asli.
+
 ---
 
 ## 🔑 KONFINAN DATABASE

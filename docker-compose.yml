@@ -4,9 +4,9 @@ services:
     image: postgres:16
     container_name: ecgo-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: REDACTED
-      POSTGRES_DB: ecgo_dashboard
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Isi POSTGRES_PASSWORD di file .env}
+      POSTGRES_DB: ${POSTGRES_DB:-ecgo_dashboard}
     ports:
       - "5433:5432"
     volumes:
@@ -19,8 +19,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgresql://postgres:REDACTED@postgres:5432/ecgo_dashboard
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      DATABASE_URL: ${DATABASE_URL:?Isi DATABASE_URL di file .env (contoh: postgresql://postgres:PASSWORD@postgres:5432/ecgo_dashboard)}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
     depends_on:
       - postgres
     restart: unless-stopped

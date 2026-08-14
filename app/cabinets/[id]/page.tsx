@@ -1,49 +1,59 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
-import { Slot } from "@/lib/schema"
+import { useParams, useRouter } from "next/navigation"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
+import StatusBadge from "@/components/shared/StatusBadge"
+import type { Slot } from "@/lib/schema"
 
-interface CabinetDetail {
+interface CabinetDetailData {
   id: string
   code: string
   branch: string
   status: "ONLINE" | "OFFLINE" | "MAINTENANCE"
   lastHeartbeat: Date | null
   slots: Slot[]
-  swapHistory: any[]
+  swapHistory: {
+    id: string
+    userId: string
+    oldBatteryId: string
+    newBatteryId: string
+    swappedAt: Date
+  }[]
   chartData: { hour: string; count: number }[]
+}
+
+const SLOT_STYLES: Record<string, { border: string; text: string; badge: string; pulse?: boolean }> = {
+  FULL: { border: "border-t-ecgo-green", text: "text-ecgo-green", badge: "bg-ecgo-green/10 text-ecgo-green" },
+  CHARGING: { border: "border-t-charging", text: "text-charging", badge: "bg-charging/10 text-charging", pulse: true },
+  EMPTY: { border: "", text: "text-on-surface-variant/50", badge: "text-on-surface-variant/70" },
+  LOCKED: { border: "border-t-error", text: "text-error", badge: "bg-error/10 text-error" },
+  FAULT: { border: "border-t-fault", text: "text-fault", badge: "bg-fault/10 text-fault" },
 }
 
 export default function CabinetDetail() {
   const { id } = useParams<{ id: string }>()
-  const [cabinet, setCabinet] = useState<CabinetDetail | null>(null)
+  const router = useRouter()
+  const [cabinet, setCabinet] = useState<CabinetDetailData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
-
     const fetchCabinet = async () => {
       setLoading(true)
       setError(null)
-
       try {
         const response = await fetch(`/api/cabinets/${id}`)
-
-        if (!response.ok) throw new Error("Cabinet not found")
-
-        const data = await response.json()
-        setCabinet(data)
+        if (!response.ok) throw new Error("Cabinet tidak ditemukan")
+        setCabinet(await response.json())
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred")
+        setError(err instanceof Error ? err.message : "Terjadi kesalahan")
       } finally {
         setLoading(false)
       }
     }
-
     fetchCabinet()
   }, [id])
 
@@ -51,91 +61,157 @@ export default function CabinetDetail() {
   if (error) return <ErrorMessage message={error} />
   if (!cabinet) return null
 
+  const totalSwap24h = cabinet.chartData.reduce((acc, c) => acc + c.count, 0)
+  const maxChart = Math.max(...cabinet.chartData.map((c) => c.count), 1)
+
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{cabinet.code}</h1>
-        <p className="text-gray-600">{cabinet.branch}</p>
-        <div className="mt-2 flex items-center gap-4">
-          <span
-            className={`px-2 py-1 text-xs font-medium rounded-full ${
-              cabinet.status === "ONLINE"
-                ? "bg-green-100 text-green-800"
-                : cabinet.status === "OFFLINE"
-                ? "bg-gray-100 text-gray-800"
-                : "bg-yellow-100 text-yellow-800"
-            }`}
+    <>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.push("/cabinets")}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container hover:bg-surface-variant text-on-surface transition-colors"
           >
-            {cabinet.status}
-          </span>
-          <span className="text-sm text-gray-500">
-            Last Update:{" "}
-            {cabinet.lastHeartbeat
-              ? new Date(cabinet.lastHeartbeat).toLocaleString()
-              : "Tidak ada data"}
-          </span>
+            <span className="material-symbols-outlined">arrow_back</span>
+          </button>
+          <div>
+            <div className="flex items-center gap-3">
+              <h2 className="font-display text-display text-ecgo-blue">{cabinet.code}</h2>
+              <StatusBadge status={cabinet.status} />
+            </div>
+            <p className="text-body-sm text-on-surface-variant mt-1 flex items-center gap-2">
+              <span className="material-symbols-outlined text-sm">location_on</span>
+              Branch: {cabinet.branch} • Heartbeat:{" "}
+              {cabinet.lastHeartbeat ? new Date(cabinet.lastHeartbeat).toLocaleString() : "Tidak ada data"}
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button className="px-4 py-2 bg-surface-container rounded-lg text-on-surface text-body-sm font-medium hover:bg-surface-variant transition-colors flex items-center gap-2 border border-outline-variant">
+            <span className="material-symbols-outlined text-sm">lock_open</span>
+            Unlock All
+          </button>
+          <button className="px-4 py-2 bg-ecgo-blue text-white rounded-lg text-body-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2 shadow-sm">
+            <span className="material-symbols-outlined text-sm">power_settings_new</span>
+            Restart
+          </button>
         </div>
       </div>
 
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Slot Grid</h2>
-        <SlotGrid slots={cabinet.slots} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="card p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-headline-md text-ecgo-blue">Status Slot Baterai</h3>
+              <div className="flex gap-3 text-label-caps text-on-surface-variant uppercase flex-wrap">
+                <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-ecgo-green"></div> Full</span>
+                <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-charging"></div> Charging</span>
+                <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-surface-variant border border-outline-variant"></div> Empty</span>
+                <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-error"></div> Locked</span>
+                <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-fault"></div> Fault</span>
+              </div>
+            </div>
+            <SlotGrid slots={cabinet.slots} />
+          </div>
+        </div>
+
+        <div className="lg:col-span-1 space-y-6">
+          <div className="card p-6 flex flex-col h-[320px]">
+            <h3 className="font-headline-md text-ecgo-blue mb-4">Swap per Jam</h3>
+            <div className="flex-1 w-full relative flex items-end gap-1">
+              {cabinet.chartData.map((item) => (
+                <div key={item.hour} className="flex-1 flex flex-col items-center justify-end h-full group">
+                  <span className="text-[10px] font-mono text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">
+                    {item.count}
+                  </span>
+                  <div
+                    className="w-full bg-ecgo-green/80 rounded-t-sm group-hover:bg-ecgo-green transition-colors"
+                    style={{ height: `${Math.max((item.count / maxChart) * 80, 2)}%` }}
+                  ></div>
+                  <span className="text-[9px] font-mono text-outline mt-1">{item.hour.split(":")[0]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="card p-4">
+              <span className="text-label-caps text-on-surface-variant uppercase">Total Swap (24h)</span>
+              <div className="font-display text-display text-ecgo-blue mt-1">{totalSwap24h}</div>
+            </div>
+            <div className="card p-4">
+              <span className="text-label-caps text-on-surface-variant uppercase">Uptime</span>
+              <div className="font-display text-display text-ecgo-blue mt-1">
+                {cabinet.status === "ONLINE" ? "100%" : "0%"}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Swap Transactions 24 Jam Terakhir
-        </h2>
-        <SwapChart chartData={cabinet.chartData} />
-      </div>
-
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Transactions (20 Terakhir)
-        </h2>
+      <div className="card p-6 overflow-hidden">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-headline-md text-ecgo-blue">Daftar Transaksi Terakhir</h3>
+          <button
+            onClick={() => router.push(`/transactions?cabinetId=${cabinet.id}`)}
+            className="text-primary font-medium text-body-sm hover:underline"
+          >
+            Lihat Semua
+          </button>
+        </div>
         <TransactionList transactions={cabinet.swapHistory} />
       </div>
-    </div>
+    </>
   )
 }
 
 function SlotGrid({ slots }: { slots: Slot[] }) {
-  const getStateColor = (state: string) => {
-    switch (state) {
-      case "EMPTY":
-        return "bg-gray-300"
-      case "CHARGING":
-        return "bg-blue-500"
-      case "FULL":
-        return "bg-green-500"
-      case "LOCKED":
-        return "bg-red-500"
-      case "FAULT":
-        return "bg-orange-500"
-      default:
-        return "bg-gray-300"
-    }
-  }
-
+  const total = Math.max(slots.length, 12)
   return (
-    <div className="grid grid-cols-6 gap-2">
-      {Array.from({ length: 12 }, (_, i) => {
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+      {Array.from({ length: total }, (_, i) => {
         const slot = slots.find((s) => s.slotNumber === i + 1)
+        const style = SLOT_STYLES[slot?.state ?? "EMPTY"] ?? SLOT_STYLES["EMPTY"]!
+        const isEmpty = !slot || slot.state === "EMPTY"
+
+        if (isEmpty) {
+          return (
+            <div
+              key={i + 1}
+              className="relative bg-surface-variant/50 rounded-lg p-4 flex flex-col items-center justify-center min-h-[140px] border border-dashed border-outline-variant"
+            >
+              <span className="absolute top-2 left-2 text-label-caps text-on-surface-variant/50">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <div className="font-headline-md text-on-surface-variant/50">--</div>
+              <span className="text-label-caps mt-2 text-on-surface-variant/70">EMPTY</span>
+            </div>
+          )
+        }
+
         return (
           <div
             key={i + 1}
-            className={`w-16 h-16 rounded-lg flex flex-col items-center justify-center relative ${getStateColor(slot?.state || "EMPTY")}`}
+            className={`relative bg-surface-container rounded-lg p-4 flex flex-col items-center justify-center min-h-[140px] border-t-4 ${style.border} shadow-sm hover:shadow-md transition-shadow cursor-pointer ${style.pulse ? "animate-pulse-glow" : ""}`}
           >
-            <span className="text-xs text-white">{i + 1}</span>
-            {slot?.state === "CHARGING" && (
-              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            )}
-            {slot?.soc && slot?.state !== "EMPTY" && (
-              <span className="text-xs absolute bottom-1 text-white">{slot.soc}%</span>
-            )}
-            {slot?.state === "EMPTY" && (
-              <span className="text-xs absolute bottom-1 text-gray-600">Empty</span>
-            )}
+            <span className="absolute top-2 left-2 text-label-caps text-on-surface-variant">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <div className={`font-display text-display ${style.text}`}>
+              {slot?.soc != null ? `${slot.soc}%` : "--"}
+            </div>
+            <span className={`text-label-caps mt-2 px-2 py-1 rounded ${style.badge} flex items-center gap-1`}>
+              {slot?.state === "CHARGING" && (
+                <span className="material-symbols-outlined text-[14px]">bolt</span>
+              )}
+              {slot?.state === "LOCKED" && (
+                <span className="material-symbols-outlined text-[14px]">lock</span>
+              )}
+              {slot?.state === "FAULT" && (
+                <span className="material-symbols-outlined text-[14px]">warning</span>
+              )}
+              {slot?.state}
+            </span>
           </div>
         )
       })}
@@ -143,72 +219,43 @@ function SlotGrid({ slots }: { slots: Slot[] }) {
   )
 }
 
-function SwapChart({ chartData }: { chartData: { hour: string; count: number }[] }) {
-  if (typeof window === "undefined") return null
-
-  return (
-    <div className="bg-white p-4 rounded-lg border border-gray-200">
-      <h3 className="text-sm font-medium text-gray-700 mb-3">
-        Jumlah Swap per Jam (24 Jam Terakhir)
-      </h3>
-      <div className="h-48">
-        <div className="flex items-end gap-2 h-full">
-          {chartData.map((item) => (
-            <div key={item.hour} className="flex-1 flex flex-col items-center">
-              <div
-                className="w-8 bg-blue-500 rounded-t transition-all hover:bg-blue-600"
-                style={{ height: `${Math.max(item.count * 10, 4)}px` }}
-              ></div>
-              <span className="text-xs text-gray-500 mt-1">{item.hour.split(":")[0]}</span>
-              <span className="text-xs font-medium text-gray-700 mt-1">{item.count}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function TransactionList({ transactions }: { transactions: any[] }) {
+function TransactionList({ transactions }: { transactions: CabinetDetailData["swapHistory"] }) {
   if (transactions.length === 0) {
     return (
-      <div className="bg-white p-4 rounded-lg border border-gray-200">
-        <p className="text-gray-500 text-center py-4">Tidak ada riwayat transaksi</p>
-      </div>
+      <div className="py-8 text-center text-on-surface-variant">Tidak ada riwayat transaksi</div>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <table className="w-full">
+    <div className="overflow-x-auto">
+      <table className="w-full text-left border-collapse">
         <thead>
-          <tr className="bg-gray-50">
-            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
-              User ID
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
-              Old Battery
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
-              New Battery
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
-              Swapped At
-            </th>
+          <tr className="border-b-2 border-outline-variant/30">
+            <th className="py-3 px-4 text-label-caps text-ecgo-blue/80 uppercase tracking-wider">Waktu</th>
+            <th className="py-3 px-4 text-label-caps text-ecgo-blue/80 uppercase tracking-wider">User ID</th>
+            <th className="py-3 px-4 text-label-caps text-ecgo-blue/80 uppercase tracking-wider">Baterai Lama</th>
+            <th className="py-3 px-4 text-label-caps text-ecgo-blue/80 uppercase tracking-wider">Baterai Baru</th>
+            <th className="py-3 px-4 text-label-caps text-ecgo-blue/80 uppercase tracking-wider text-right">Status</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="font-mono text-data-mono text-on-surface">
           {transactions.map((tx) => (
-            <tr key={tx.id} className="border-t border-gray-200 hover:bg-gray-50">
-              <td className="px-4 py-3 text-sm text-gray-900">{tx.userId}</td>
-              <td className="px-4 py-3 text-sm text-gray-600 font-mono">
-                {tx.oldBatteryId}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-600 font-mono">
-                {tx.newBatteryId}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-600">
+            <tr key={tx.id} className="border-b border-outline-variant/20 hover:bg-surface-dim transition-colors">
+              <td className="py-3 px-4 text-on-surface-variant">
                 {tx.swappedAt ? new Date(tx.swappedAt).toLocaleString() : "-"}
+              </td>
+              <td className="py-3 px-4">{tx.userId}</td>
+              <td className="py-3 px-4">
+                <span className="bg-surface-container px-2 py-1 rounded">{tx.oldBatteryId}</span>
+              </td>
+              <td className="py-3 px-4">
+                <span className="bg-surface-container px-2 py-1 rounded">{tx.newBatteryId}</span>
+              </td>
+              <td className="py-3 px-4 text-right">
+                <span className="inline-flex items-center gap-1 text-ecgo-green text-label-caps bg-ecgo-green/10 px-2 py-1 rounded">
+                  <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                  Sukses
+                </span>
               </td>
             </tr>
           ))}

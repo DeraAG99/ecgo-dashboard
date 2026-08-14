@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { cabinets, slots, transactions } from "@/lib/schema"
+import { cabinetParamsSchema } from "@/lib/validation"
 import { z } from "zod"
-import { eq, desc, and } from "drizzle-orm"
+import { sql, eq, desc } from "drizzle-orm"
 
-const paramsSchema = z.object({
-  id: z.string().uuid(),
-})
-
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest) {
   try {
-    const { id } = paramsSchema.parse({ id: params.id })
+    const { id } = cabinetParamsSchema.parse({ id: req.nextUrl.pathname.split("/").pop() || "" })
+
+    if (!id) {
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 })
+    }
 
     const cabinetData = await db.query.cabinets.findFirst({
       where: eq(cabinets.id, id),
@@ -32,28 +33,26 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       .orderBy(desc(transactions.swappedAt))
       .limit(20)
 
-    const now = new Date()
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    const chartData = await db.execute<{ hour: string; count: number }>(sql`
+      SELECT 
+        LPAD(FLOOR(EXTRACT(HOUR FROM t.swapped_at))::TEXT, 2, '0') || ':00' as hour,
+        COUNT(*)::int as count
+      FROM ${transactions} t
+      WHERE t.cabinet_id = ${id} AND t.swapped_at > NOW() - INTERVAL '24 hours'
+      GROUP BY FLOOR(EXTRACT(HOUR FROM t.swapped_at))
+      ORDER BY hour
+    `)
 
-    const transactions24h = await db.query.transactions.findMany({
-      where: and(eq(transactions.cabinetId, id), transactions.swappedAt > twentyFourHoursAgo),
-    })
-
-    const chartDataMap = new Map<string, number>()
+    const chartMap = new Map<string, number>()
     for (let i = 0; i < 24; i++) {
-      const hour = String(i).padStart(2, "0")
-      chartDataMap.set(hour, 0)
+      chartMap.set(String(i).padStart(2, "0") + ":00", 0)
+    }
+    for (const row of chartData.rows) {
+      chartMap.set(row.hour, row.count)
     }
 
-    transactions24h.forEach((tx) => {
-      if (tx.swappedAt) {
-        const hour = new Date(tx.swappedAt).getHours().toString().padStart(2, "0")
-        chartDataMap.set(hour, (chartDataMap.get(hour) || 0) + 1)
-      }
-    })
-
-    const chartData = Array.from(chartDataMap.entries()).map(([hour, count]) => ({
-      hour: `${hour}:00`,
+    const chartDataArray = Array.from(chartMap.entries()).map(([hour, count]) => ({
+      hour,
       count,
     }))
 
@@ -65,7 +64,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       lastHeartbeat: cabinetData.lastHeartbeat,
       slots: slotsData,
       swapHistory,
-      chartData,
+      chartData: chartDataArray,
     })
   } catch (error) {
     if (error instanceof z.ZodError) {

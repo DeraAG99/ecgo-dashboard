@@ -1,73 +1,91 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { cabinets, slots, transactions } from "@/lib/schema"
+import { cabinetsQuerySchema } from "@/lib/validation"
+import { sql } from "drizzle-orm"
 import { z } from "zod"
-import { count, sql, eq, ilike, and, desc, gte } from "drizzle-orm"
 
-const querySchema = z.object({
-  search: z.string().optional(),
-  status: z.enum(["ONLINE", "OFFLINE", "MAINTENANCE"]).optional(),
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().default(10),
-  sortBy: z.enum(["swapCount24h", "code", "lastHeartbeat"]).optional().default("swapCount24h"),
-  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
-})
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CabinetRow = Record<string, any> & {
+  id: string
+  code: string
+  branch: string
+  status: "ONLINE" | "OFFLINE" | "MAINTENANCE"
+  totalSlots: number
+  lastHeartbeat: Date | null
+  filledSlots: number
+  swapCount24h: number
+  _total: number
+}
 
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url)
     const searchParams = Object.fromEntries(url.searchParams)
-    const params = querySchema.parse(searchParams)
+    const params = cabinetsQuerySchema.parse(searchParams)
 
     const { search, status, page, limit, sortBy, sortOrder } = params
     const offset = (page - 1) * limit
 
-    const whereConditions: any[] = []
+    const sortField = sortBy === "swapCount24h" ? "swap_count_24h" : sortBy === "code" ? "code" : "last_heartbeat"
+    const sortDirection = sortOrder === "desc" ? "DESC" : "ASC"
 
-    if (search) {
-      whereConditions.push(
-        sql`${ilike(cabinets.code, sql`%{search}%`)} OR ${ilike(cabinets.branch, sql`%{search}%`)}`
+    const searchCond = search
+      ? sql`(c.code ILIKE ${`%${search}%`} OR c.branch ILIKE ${`%${search}%`})`
+      : sql`TRUE`
+    const statusCond = status ? sql`c.status = ${status}` : sql`TRUE`
+
+    const rawResults = await db.execute(sql`
+      WITH filtered_cabinets AS (
+        SELECT 
+          c.id,
+          c.code,
+          c.branch,
+          c.status,
+          c.total_slots,
+          c.last_heartbeat,
+          COALESCE(filled.cnt, 0) as filled_slots,
+          COALESCE(swaps.cnt, 0) as swap_count_24h
+        FROM ${cabinets} c
+        LEFT JOIN LATERAL (
+          SELECT COUNT(*) as cnt 
+          FROM ${slots} s 
+          WHERE s.cabinet_id = c.id AND s.state IN ('FULL', 'CHARGING')
+        ) filled ON true
+        LEFT JOIN LATERAL (
+          SELECT COUNT(*) as cnt 
+          FROM ${transactions} t 
+          WHERE t.cabinet_id = c.id AND t.swapped_at > NOW() - INTERVAL '24 hours'
+        ) swaps ON true
+        WHERE ${searchCond} AND ${statusCond}
       )
-    }
+      SELECT 
+        id, code, branch, status, total_slots as "totalSlots", last_heartbeat as "lastHeartbeat",
+        filled_slots as "filledSlots", swap_count_24h as "swapCount24h",
+        COUNT(*) OVER() as "_total"
+      FROM filtered_cabinets
+      ORDER BY ${sql.raw(sortField)} ${sql.raw(sortDirection)}
+      LIMIT ${limit} OFFSET ${offset}
+    `)
 
-    if (status) {
-      whereConditions.push(eq(cabinets.status, status))
-    }
+    const rows = rawResults.rows as unknown as CabinetRow[]
+    const data = rows.map((row) => ({
+      id: row.id,
+      code: row.code,
+      branch: row.branch,
+      status: row.status,
+      totalSlots: row.totalSlots,
+      lastHeartbeat: row.lastHeartbeat,
+      filledSlots: row.filledSlots,
+      swapCount24h: row.swapCount24h,
+    }))
 
-    const cabinetData = await db
-      .select({
-        id: cabinets.id,
-        code: cabinets.code,
-        branch: cabinets.branch,
-        status: cabinets.status,
-        totalSlots: cabinets.totalSlots,
-        lastHeartbeat: cabinets.lastHeartbeat,
-        filledSlots: sql<number>`(
-          SELECT COUNT(*) FROM slots 
-          WHERE cabinet_id = ${cabinets.id} AND state IN ('FULL', 'CHARGING')
-        )`,
-        swapCount24h: sql<number>`(
-          SELECT COUNT(*) FROM transactions 
-          WHERE cabinet_id = ${cabinets.id} 
-          AND swapped_at > NOW() - INTERVAL '24 hours'
-        )`,
-      })
-      .from(cabinets)
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-      .orderBy(sortOrder === "desc" ? desc(sql`${sortBy}`) : sql`${sortBy}`)
-      .offset(offset)
-      .limit(limit)
-
-    const totalResult = await db
-      .select({ total: count() })
-      .from(cabinets)
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-
-    const total = totalResult[0]?.total || 0
+    const firstRow = rows[0]
+    const total = firstRow?._total ?? 0
     const totalPages = Math.ceil(total / limit)
 
     return NextResponse.json({
-      data: cabinetData,
+      data,
       total,
       page,
       totalPages,

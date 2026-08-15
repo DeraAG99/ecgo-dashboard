@@ -62,14 +62,11 @@ jobs:
             cd "${APP_DIR:-/opt/ecgo-dashboard}"
             git pull origin main
 
-            # Tulis .env.prod dari GitHub secrets (jangan pernah di-commit)
-            cat > .env.prod <<'EOF'
-            POSTGRES_USER=postgres
-            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-            POSTGRES_DB=ecgo_dashboard
-            DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/ecgo_dashboard
-            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
-            EOF
+            # .env.prod disiapkan manual sekali di VM (gitignored) — tidak ditulis dari secrets
+            if [ ! -f .env.prod ]; then
+              echo "❌ .env.prod tidak ada di VM. Buat sekali: cp .env.example .env.prod lalu isi credential." >&2
+              exit 1
+            fi
 
             # 1. Start Postgres dulu
             docker compose --env-file .env.prod up -d postgres

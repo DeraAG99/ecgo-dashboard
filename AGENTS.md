@@ -23,6 +23,10 @@ app/
 │   │   ├── route.ts               # GET list (filter, search, sort, pagination)
 │   │   ├── [id]/route.ts          # GET detail (slots, 20 transaksi, chart 24h)
 │   │   └── export/route.ts        # GET CSV export
+│   ├── checkins/
+│   │   └── route.ts               # POST check-in (evaluateCheckIn) + GET riwayat
+│   ├── swaps/
+│   │   └── route.ts               # POST swap (gate ketat oleh check-in VALID 15m)
 │   ├── dashboard/route.ts         # GET KPI overview
 │   └── transactions/
 │       ├── route.ts               # GET list transaksi (filter, pagination)
@@ -32,6 +36,7 @@ app/
 │   ├── cabinets/
 │   │   ├── page.tsx               # Daftar Cabinet (CabinetTable)
 │   │   └── [id]/page.tsx          # Detail Cabinet (SlotGrid dari components/ui/SlotGrid, chart & TransactionList inline)
+│   ├── checkins/page.tsx          # Demo check-in → swap (target cabinet, radius, riwayat)
 │   └── transactions/page.tsx      # Riwayat transaksi
 ├── page.tsx                       # Redirect ke /dashboard
 ├── layout.tsx + globals.css
@@ -40,14 +45,15 @@ components/
 ├── shared/   (LoadingSpinner, ErrorMessage, StatusBadge)
 └── ui/       (per domain: Cabinet/, SlotGrid/ dst.)
 lib/
-├── checkin/  (evaluateCheckin.ts + test — Bagian C)
+├── checkin/  (evaluateCheckin.ts + test — Bagian C; export haversine & tipe Branch/CheckIn/Result)
 ├── db.ts     # Koneksi database (Drizzle)
 ├── schema.ts # Schema Drizzle
+├── time.ts   # Helper WIB (Asia/Jakarta): dayStart, dayEndExclusive, dateKey, todayStart, formatJakarta
 ├── validation.ts  # Schema Zod terpusat
 └── test-utils.ts  # Helper mock untuk test
 drizzle/
 ├── migrations/
-└── seed.ts   # Seed 50 cabinets, 600 slots, 20k transaksi
+└── seed.ts   # Seed 50 cabinets (+lat/lng/radiusM), 600 slots, 20k transaksi, 20 check-ins
 types/index.ts
 mockup/        # Design mockups (static HTML + screenshot)
 docs/          # Soal, jawaban, tracker
@@ -75,6 +81,16 @@ phase.md
 ### Slot State Enum
 - EMPTY, CHARGING, FULL, LOCKED, FAULT
 
+### Check-in Enums
+- `check_in_result`: VALID, OUT_OF_RANGE, REJECTED
+- `check_in_reason`: LOW_ACCURACY, INVALID_COORDINATE, NO_BRANCH_ASSIGNED
+
+### Check-in Flow (Fitur tambahan)
+- `cabinets` punya kolom `lat`, `lng`, `radiusM` (target geofence).
+- Tabel `checkins`: riwayat hasil `evaluateCheckIn` (VALID/OUT_OF_RANGE/REJECTED).
+- `POST /api/swaps` **hanya jalan** bila ada check-in VALID ≤ 15 menit utk user tsb **dan** cabang cabinet = cabang check-in; lalu INSERT transaksi (`tx-...`, battery `BATT-XXXXXXXX`) + update slot `FULL→EMPTY`, `EMPTY→CHARGING`.
+- Note tipe: `lib/schema.ts` dan `lib/checkin/evaluateCheckin.ts` sama-sama mengekspor tipe `CheckIn` → alias saat import dua-duanya.
+
 ---
 
 ## 📡 API ENDPOINTS
@@ -85,6 +101,15 @@ Response: `{ id, code, branch, status, filledSlots, totalSlots, swapCount24h, la
 
 ### GET /api/cabinets/:id
 Response: Cabinet detail with slots, 24h transactions, chart data
+
+### POST /api/checkins
+Body (Zod `checkInSchema`): `{ userId, lat, lng, accuracyM }` → panggil `evaluateCheckIn` → INSERT ke `checkins` → 201 `{ checkIn, result }`
+
+### GET /api/checkins
+Query params: `userId`, `result`, `page`, `limit` → riwayat paginated (LEFT JOIN cabinets utk info cabang)
+
+### POST /api/swaps
+Body (Zod `swapSchema`): `{ userId, cabinetId }`. Gate: check-in VALID ≤ 15m (`403`) → cabinet ada (`404`) → cabang cocok (`403`) → slot FULL≥1 & EMPTY≥1 (`409`) → sukses 201 `{ transaction, slotChanges }`
 
 ---
 
@@ -123,6 +148,17 @@ bun run start
 |------|------|------|----------|------|----------|
 | Dev | localhost | 5432 | ecgo_dashboard | postgres | password |
 | VM (Docker) | localhost (host mapping) | 5432 | ecgo_dashboard | postgres | dari `.env.prod` |
+
+---
+
+## 🕐 TIMEZONE (Asia/Jakarta)
+
+- **Zona tunggal:** WIB (UTC+7). Semua kolom waktu di DB memakai `timestamp` tanpa timezone; data disimpan sebagai wall time WIB.
+- **docker-compose.yml** menyetel `TZ: Asia/Jakarta` (+ `PGTZ: Asia/Jakarta`) di service `postgres` dan `TZ: Asia/Jakarta` di service `dashboard`.
+- **UI** merender semua waktu via `formatJakarta()` dari `lib/time.ts` (paksa `timeZone: "Asia/Jakarta"` eksplisit, bukan default browser). Dipakai di: `CabinetTable.tsx`, `cabinets/[id]/page.tsx` (×2), `transactions/page.tsx`, `checkins/page.tsx`.
+- **Filter tanggal** `/api/transactions` + export diinterpretasikan sebagai **WIB** (via `jakartaDayStart`/`jakartaDayEndExclusive`; `endDate` inclusive).
+- **KPI dashboard** "swap hari ini" pakai `jakartaTodayStart()` dan label `weeklyTrend` pakai `jakartaDateKey()` — tidak bergantung timezone host/server.
+- ⚠️ **Ganti TZ → wajib re-seed** (data lama akan tergeser offset). Saat deploy ulang setelah ubah TZ, hapus/seed ulang DB.
 
 ---
 

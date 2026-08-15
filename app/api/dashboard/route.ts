@@ -2,12 +2,12 @@ import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { cabinets, slots, transactions } from "@/lib/schema"
 import { sql, gte, desc, count } from "drizzle-orm"
+import { jakartaTodayStart, jakartaDateKey } from "@/lib/time"
 
 export async function GET() {
   try {
-    const now = new Date()
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const todayStart = jakartaTodayStart()
+    const sevenDaysAgo = new Date(todayStart.getTime() - 6 * 24 * 60 * 60 * 1000)
 
     const [cabinetRows, slotRows, swapTodayRow, swap7dRows] = await Promise.all([
       db
@@ -60,10 +60,9 @@ export async function GET() {
 
     const dayMap = new Map<string, number>()
     const labels: string[] = []
-    for (let i = 6; i >= 0; i--) {
+    for (let i = 0; i < 7; i++) {
       const d = new Date(sevenDaysAgo.getTime() + i * 24 * 60 * 60 * 1000)
-      const key = d.toISOString().slice(0, 10)
-      labels.push(key)
+      labels.push(jakartaDateKey(d))
     }
     swap7dRows.forEach((r) => {
       dayMap.set(r.day, Number(r.total))

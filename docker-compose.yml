@@ -6,6 +6,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Isi POSTGRES_PASSWORD di file .env}
       POSTGRES_DB: ${POSTGRES_DB:-ecgo_dashboard}
+      TZ: Asia/Jakarta
+      PGTZ: Asia/Jakarta
     ports:
       - "5432:5432"
     volumes:
@@ -25,6 +27,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:?Isi DATABASE_URL di file .env}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      TZ: Asia/Jakarta
     depends_on:
       postgres:
         condition: service_healthy

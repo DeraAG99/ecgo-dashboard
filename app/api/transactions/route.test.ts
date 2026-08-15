@@ -47,6 +47,25 @@ describe("GET /api/transactions", () => {
     expect(dbMock.select).toHaveBeenCalledTimes(2)
   })
 
+  it("should accept startDate and endDate filters", async () => {
+    dbMock.select.mockReturnValue(buildSelectChain([]))
+    const res = await GET(
+      new NextRequest(
+        "http://localhost/api/transactions?startDate=2026-08-01&endDate=2026-08-15"
+      )
+    )
+    expect(res.status).toBe(200)
+    expect(dbMock.select).toHaveBeenCalledTimes(2)
+  })
+
+  it("should return 400 for invalid date filter", async () => {
+    const res = await GET(
+      new NextRequest("http://localhost/api/transactions?startDate=not-a-date")
+    )
+    expect(res.status).toBe(400)
+    expect(dbMock.select).not.toHaveBeenCalled()
+  })
+
   it("should return 400 for negative limit", async () => {
     const res = await GET(new NextRequest("http://localhost/api/transactions?limit=-1"))
     expect(res.status).toBe(400)

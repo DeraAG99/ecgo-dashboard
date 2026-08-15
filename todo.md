@@ -39,7 +39,7 @@
 
 ## Phase 6: Quality & Testing ✅
 - [x] Vitest configuration (vitest.config.ts)
-- [x] Unit tests untuk schema & utils (62 tests: lib/validation.test.ts + lib/checkin/evaluateCheckin.test.ts + API routes + components)
+- [x] Unit tests untuk schema & utils (82 tests: lib/validation.test.ts + lib/checkin/evaluateCheckin.test.ts + API routes + components)
 - [x] Component tests (StatusBadge, CabinetTable, Sidebar, Topbar)
 - [x] API route tests (cabinets, detail, export, transactions, dashboard — mock @/lib/db)
 - [x] Code coverage ≥ 80% (All files: 96.9% statements, 86.11% branches, 92% functions)
@@ -69,7 +69,39 @@
 
 ---
 
-## Phase 9: Future / Real-time ⏳
+## Phase 9: Transactions Filter ✅
+- [x] Filter rentang tanggal (startDate/endDate) di API GET /api/transactions + export + validation (inclusive endDate)
+- [x] Dropdown cabinet/cabang (param cabinetId) di halaman transactions — API sudah support, tinggal UI
+- [x] Select status diperluas (Semua/Sukses/Gagal) — placeholder jaga-jaga (tabel belum punya kolom status)
+- [x] Reset halaman ke 1 saat filter berubah
+- [x] Tests: route date filter (valid + invalid 400) + page test baru (87 total test)
+
+---
+
+## Phase 10: Check-in & Swap Flow ✅
+- [x] Schema: cabinets + `lat`/`lng`/`radiusM`, tabel `checkins` + enum `check_in_result`/`check_in_reason` (migration 0001)
+- [x] Seed: 50 cabinets + koordinat/radius, 20 riwayat check-in dummy (campuran VALID/OUT_OF_RANGE/REJECTED)
+- [x] POST /api/checkins (evaluateCheckIn → INSERT checkins) + GET /api/checkins (riwayat paginated)
+- [x] POST /api/swaps (gate ketat: check-in VALID ≤ 15m, cabang cocok, slot FULL/EMPTY → INSERT tx + update slot)
+- [x] Halaman /dashboard/checkins (demo: pilih cabinet target → prefill lat/lng → jarak real-time haversine → check-in → swap)
+- [x] Menu Sidebar "Check-in"
+- [x] Tests: routes checkins/swaps (6 skenario gate) + page (82 total test)
+- [x] E2E nyata ke DB docker: VALID→swap 201, OUT_OF_RANGE, 403 tanpa check-in, REJECTED low accuracy
+- [x] Docs (README, AGENTS) + verifikasi lint/typecheck/build
+
+---
+
+## Phase 11: Timezone Asia/Jakarta ✅
+- [x] Helper `lib/time.ts` + test (jakartaDayStart/jakartaDayEndExclusive/jakartaDateKey/jakartaTodayStart/formatJakarta)
+- [x] docker-compose: `TZ: Asia/Jakarta` (+ PGTZ) di postgres, `TZ: Asia/Jakarta` di dashboard
+- [x] UI eksplisit WIB via `formatJakarta()` di 5 titik (CabinetTable, detail cabinet ×2, transactions, checkins)
+- [x] Filter tanggal `/api/transactions` + export diinterpretasikan WIB (endDate inclusive)
+- [x] KPI dashboard `jakartaTodayStart()` + label weeklyTrend WIB
+- [x] Recreate container postgres (timezone Asia/Jakarta) + re-seed; verifikasi (92 total test)
+
+---
+
+## Phase 12: Future / Real-time ⏳
 - [ ] Ganti polling 30 detik → WebSocket agar data real time
   - Titik polling saat ini: `components/ui/Cabinet/CabinetTable.tsx` (daftar) & `app/dashboard/cabinets/[id]/page.tsx` (detail), keduanya `setInterval 30s`
   - Arsitektur: Next 15 App Router belum punya WebSocket native → server WS terpisah (socket.io/ws) atau `pg LISTEN/NOTIFY` + push ke client
@@ -78,7 +110,7 @@
 ---
 
 ## Statistik
-- **Total Tasks:** 50
-- **Completed:** 47
+- **Total Tasks:** 70
+- **Completed:** 67
 - **In Progress:** 0
 - **Pending:** 3

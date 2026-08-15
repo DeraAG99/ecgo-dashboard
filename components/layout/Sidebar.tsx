@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
   { href: "/dashboard/cabinets", label: "Cabinet List", icon: "battery_charging_full" },
   { href: "/dashboard/transactions", label: "Transactions", icon: "receipt_long" },
+  { href: "/dashboard/checkins", label: "Check-in", icon: "location_on" },
   { href: "/maintenance", label: "Maintenance", icon: "build" },
   { href: "/settings", label: "Settings", icon: "settings" },
 ]

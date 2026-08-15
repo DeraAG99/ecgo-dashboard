@@ -24,7 +24,7 @@ describe("Sidebar", () => {
 
   it("renders all nav items", () => {
     render(<Sidebar />)
-    for (const label of ["Dashboard", "Cabinet List", "Transactions", "Maintenance", "Settings"]) {
+    for (const label of ["Dashboard", "Cabinet List", "Transactions", "Check-in", "Maintenance", "Settings"]) {
       expect(screen.getByText(label)).toBeTruthy()
     }
   })

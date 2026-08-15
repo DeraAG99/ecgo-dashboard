@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
+import { formatJakarta } from "@/lib/time"
 
 interface TransactionRow {
   id: string
@@ -14,6 +15,12 @@ interface TransactionRow {
   oldBatteryId: string
   newBatteryId: string
   swappedAt: Date
+}
+
+interface CabinetOption {
+  id: string
+  code: string
+  branch: string
 }
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -37,25 +44,57 @@ function TransactionsInner() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchInput, setSearchInput] = useState("")
+  const [cabinetId, setCabinetId] = useState("")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
+  const [status, setStatus] = useState("all")
+  const [cabinets, setCabinets] = useState<CabinetOption[]>([])
 
   const searchParams = useSearchParams()
   const router = useRouter()
 
   const search = searchParams.get("search") || ""
-  const cabinetId = searchParams.get("cabinetId") || ""
   const limit = 20
   const debouncedSearch = useDebounce(searchInput, 300)
+
+  useEffect(() => {
+    setCabinetId(searchParams.get("cabinetId") || "")
+    setStartDate(searchParams.get("startDate") || "")
+    setEndDate(searchParams.get("endDate") || "")
+    setStatus(searchParams.get("status") || "all")
+  }, [searchParams])
+
+  useEffect(() => {
+    setSearchInput(search)
+  }, [search])
+
+  useEffect(() => {
+    const loadCabinets = async () => {
+      try {
+        const res = await fetch("/api/cabinets?limit=100")
+        if (!res.ok) throw new Error("Gagal memuat cabinet")
+        const data = await res.json()
+        setCabinets(data.data)
+      } catch {
+        setCabinets([])
+      }
+    }
+    loadCabinets()
+  }, [])
 
   useEffect(() => {
     const params = new URLSearchParams()
     if (debouncedSearch) params.set("search", debouncedSearch)
     if (cabinetId) params.set("cabinetId", cabinetId)
+    if (startDate) params.set("startDate", startDate)
+    if (endDate) params.set("endDate", endDate)
+    if (status !== "all") params.set("status", status)
     router.push(`/dashboard/transactions?${params.toString()}`)
-  }, [debouncedSearch, cabinetId, router])
+  }, [debouncedSearch, cabinetId, startDate, endDate, status, router])
 
   useEffect(() => {
-    setSearchInput(search)
-  }, [search])
+    setPage(1)
+  }, [search, cabinetId, startDate, endDate])
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -65,6 +104,8 @@ function TransactionsInner() {
         const params = new URLSearchParams()
         if (search) params.set("search", search)
         if (cabinetId) params.set("cabinetId", cabinetId)
+        if (startDate) params.set("startDate", startDate)
+        if (endDate) params.set("endDate", endDate)
         params.set("page", String(page))
         params.set("limit", String(limit))
         const response = await fetch(`/api/transactions?${params.toString()}`)
@@ -80,7 +121,7 @@ function TransactionsInner() {
       }
     }
     fetchTransactions()
-  }, [search, cabinetId, page])
+  }, [search, cabinetId, startDate, endDate, page])
 
   if (loading && rows.length === 0) return <LoadingSpinner />
   if (error) return <ErrorMessage message={error} />
@@ -98,21 +139,48 @@ function TransactionsInner() {
 
       <div className="bg-surface-container-lowest rounded-lg shadow-sm border border-outline-variant p-4 mb-6 flex flex-wrap gap-4 items-center justify-between">
         <div className="flex flex-wrap gap-4 items-center flex-1">
-          <div className="flex items-center gap-2 bg-surface rounded-md border border-outline-variant px-3 py-1.5 min-w-[240px]">
+          <div className="flex items-center gap-2 bg-surface rounded-md border border-outline-variant px-3 py-1.5">
             <span className="material-symbols-outlined text-on-surface-variant text-[18px]">calendar_today</span>
             <input
-              type="text"
-              placeholder="Start Date - End Date"
-              className="bg-transparent border-none focus:ring-0 p-0 text-body-sm text-on-surface w-full h-6 outline-none"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="bg-transparent border-none focus:ring-0 p-0 text-body-sm text-on-surface outline-none h-6"
+            />
+            <span className="text-on-surface-variant">—</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="bg-transparent border-none focus:ring-0 p-0 text-body-sm text-on-surface outline-none h-6"
             />
           </div>
           <div className="relative">
             <select
-              defaultValue="all"
+              value={cabinetId}
+              onChange={(e) => setCabinetId(e.target.value)}
+              className="appearance-none bg-surface border border-outline-variant rounded-md pl-3 pr-8 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary h-[36px] min-w-[160px] cursor-pointer"
+            >
+              <option value="">Semua Cabinet</option>
+              {cabinets.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.code} — {c.branch}
+                </option>
+              ))}
+            </select>
+            <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[20px]">
+              arrow_drop_down
+            </span>
+          </div>
+          <div className="relative">
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
               className="appearance-none bg-surface border border-outline-variant rounded-md pl-3 pr-8 py-1.5 text-body-sm text-on-surface focus:outline-none focus:border-primary h-[36px] min-w-[140px] cursor-pointer"
             >
               <option value="all">Semua Status</option>
               <option value="success">Sukses</option>
+              <option value="failed">Gagal</option>
             </select>
             <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[20px]">
               arrow_drop_down
@@ -132,7 +200,7 @@ function TransactionsInner() {
           />
         </div>
         <a
-          href={`/api/transactions/export?search=${encodeURIComponent(search)}&cabinetId=${encodeURIComponent(cabinetId)}`}
+          href={`/api/transactions/export?search=${encodeURIComponent(search)}&cabinetId=${encodeURIComponent(cabinetId)}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`}
           className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-ecgo-green text-white rounded-lg text-body-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap h-[36px]"
         >
           <span className="material-symbols-outlined text-[18px]">download</span>
@@ -166,7 +234,7 @@ function TransactionsInner() {
                   <tr key={tx.id} className="hover:bg-surface transition-colors">
                     <td className="py-4 px-6 font-mono text-xs">{tx.id.slice(0, 12)}</td>
                     <td className="py-4 px-6 text-on-surface-variant whitespace-nowrap">
-                      {tx.swappedAt ? new Date(tx.swappedAt).toLocaleString() : "-"}
+                      {tx.swappedAt ? formatJakarta(tx.swappedAt) : "-"}
                     </td>
                     <td className="py-4 px-6 font-mono">{tx.userId}</td>
                     <td className="py-4 px-6">

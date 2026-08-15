@@ -6,6 +6,7 @@ import Link from "next/link"
 import StatusBadge from "@/components/shared/StatusBadge"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
+import { formatJakarta } from "@/lib/time"
 
 interface CabinetRow {
   id: string
@@ -194,9 +195,7 @@ function CabinetTableInner() {
                     </td>
                     <td className="py-4 px-6 font-mono">{cabinet.swapCount24h}</td>
                     <td className="py-4 px-6 text-on-surface-variant">
-                      {cabinet.lastHeartbeat
-                        ? new Date(cabinet.lastHeartbeat).toLocaleString()
-                        : "-"}
+                      {cabinet.lastHeartbeat ? formatJakarta(cabinet.lastHeartbeat) : "-"}
                     </td>
                     <td className="py-4 px-6 text-right">
                       <Link

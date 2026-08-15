@@ -69,6 +69,17 @@ docker compose --env-file .env.prod up -d
 
 > Kedua mode memakai skema & seed script yang sama; perbedaan hanya di `DATABASE_URL`.
 
+## Timezone
+
+Zona waktu tunggal: **WIB (Asia/Jakarta)**.
+
+- Kolom waktu di DB memakai `timestamp` tanpa timezone, disimpan sebagai wall time WIB.
+- `docker-compose.yml` menyetel `TZ: Asia/Jakarta` (+ `PGTZ`) di service `postgres` dan `TZ: Asia/Jakarta` di service `dashboard`.
+- UI merender waktu via `formatJakarta()` dari `lib/time.ts` (eksplisit `timeZone: "Asia/Jakarta"`, bukan default browser).
+- Filter tanggal di `/api/transactions` + export diinterpretasikan sebagai **WIB** (helper `jakartaDayStart`/`jakartaDayEndExclusive`; `endDate` inclusive).
+- KPI "swap hari ini" & label grafik weekly pakai `jakartaTodayStart()`/`jakartaDateKey()` — tidak bergantung timezone host.
+- ⚠️ Perubahan TZ mengharuskan re-seed data (offset lama akan tergeser).
+
 ## API Endpoints
 
 ### GET /api/cabinets
@@ -105,6 +116,29 @@ Daftar semua cabinet dengan filter & pagination.
 
 ### GET /api/cabinets/:id
 Detail cabinet dengan slot, transaksi, dan grafik.
+
+### POST /api/checkins
+Check-in lokasi staf/user terhadap radius cabang (geofence). Body: `{ userId, lat, lng, accuracyM }`.
+
+Logika `lib/checkin/evaluateCheckin.ts`:
+- `REJECTED LOW_ACCURACY` jika `accuracyM > 100`
+- `REJECTED INVALID_COORDINATE` jika koordinat tidak valid
+- `REJECTED NO_BRANCH_ASSIGNED` jika tidak ada cabang aktif (`status != MAINTENANCE`)
+- `VALID` jika dalam radius cabang + tolerance; else `OUT_OF_RANGE` (dengan cabang terdekat)
+
+**Response:** `{ checkIn, result }` (201). Seluruh check-in disimpan ke tabel `checkins`.
+
+### GET /api/checkins
+Riwayat check-in dengan filter `userId`, `result` dan pagination `page`/`limit`.
+Response: `{ data, total, page, totalPages }`.
+
+### POST /api/swaps
+Eksekusi swap baterai, **di-gate ketat** oleh check-in:
+- `403` jika tidak ada check-in `VALID` dalam **15 menit** terakhir untuk user tsb
+- `403` jika cabang cabinet ≠ cabang lokasi check-in
+- `404` jika cabinet tidak ditemukan
+- `409` jika slot tidak tersedia (butuh ≥1 `FULL` & ≥1 `EMPTY`)
+- Sukses (`201`): INSERT transaksi (`tx-...`, battery `BATT-XXXXXXXX`) + update slot `FULL→EMPTY` dan `EMPTY→CHARGING`. Response: `{ transaction, slotChanges }`.
 
 ## Asumsi
 
@@ -153,6 +187,19 @@ Detail cabinet dengan slot, transaksi, dan grafik.
 - `oldBatteryId`: string
 - `newBatteryId`: string
 - `swappedAt`: timestamp
+
+### Check-ins
+- `id`: string (primary key, `ci-...`)
+- `userId`: string
+- `lat`/`lng`: koordinat user saat check-in
+- `accuracyM`: akurasi GPS (meter)
+- `result`: ENUM ('VALID', 'OUT_OF_RANGE', 'REJECTED')
+- `reason`: ENUM ('LOW_ACCURACY', 'INVALID_COORDINATE', 'NO_BRANCH_ASSIGNED'), null selain REJECTED
+- `branchId`: string (FK ke cabinets; cabang valid/terdekat)
+- `distanceM`: jarak ke cabang (null saat REJECTED)
+- `createdAt`: timestamp
+
+> Cabang (cabinet) kini memiliki `lat`, `lng`, `radiusM` (meter) sebagai target geofence check-in.
 
 ## Development Commands
 

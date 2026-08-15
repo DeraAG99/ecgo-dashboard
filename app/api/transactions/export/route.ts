@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { transactions, cabinets } from "@/lib/schema"
-import { sql, desc, eq, and } from "drizzle-orm"
+import { sql, desc, eq, and, gte, lt } from "drizzle-orm"
+import { jakartaDayStart, jakartaDayEndExclusive } from "@/lib/time"
 
 const CSV_HEADER = "id,cabinetCode,branch,userId,oldBatteryId,newBatteryId,swappedAt"
 const EXPORT_LIMIT = 1000
@@ -16,6 +17,12 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url)
     const search = url.searchParams.get("search") || undefined
     const cabinetId = url.searchParams.get("cabinetId") || undefined
+    const startDateParam = url.searchParams.get("startDate")
+    const endDateParam = url.searchParams.get("endDate")
+    const startDate = startDateParam ? new Date(startDateParam) : undefined
+    const endDateRaw = endDateParam ? new Date(endDateParam) : undefined
+    const startDateValid = startDate && !Number.isNaN(startDate.getTime())
+    const endDate = endDateRaw && !Number.isNaN(endDateRaw.getTime()) ? endDateRaw : undefined
 
     const conditions = []
     if (search) {
@@ -25,6 +32,12 @@ export async function GET(req: NextRequest) {
     }
     if (cabinetId) {
       conditions.push(eq(transactions.cabinetId, cabinetId))
+    }
+    if (startDateValid) {
+      conditions.push(gte(transactions.swappedAt, jakartaDayStart(startDate!)))
+    }
+    if (endDate) {
+      conditions.push(lt(transactions.swappedAt, jakartaDayEndExclusive(endDate)))
     }
     const where = conditions.length > 0 ? and(...conditions) : undefined
 

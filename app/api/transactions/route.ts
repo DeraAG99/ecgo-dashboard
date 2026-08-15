@@ -3,7 +3,8 @@ import { db } from "@/lib/db"
 import { transactions, cabinets } from "@/lib/schema"
 import { transactionsQuerySchema } from "@/lib/validation"
 import { z } from "zod"
-import { sql, desc, eq, and } from "drizzle-orm"
+import { sql, desc, eq, and, gte, lt } from "drizzle-orm"
+import { jakartaDayStart, jakartaDayEndExclusive } from "@/lib/time"
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest) {
     const searchParams = Object.fromEntries(url.searchParams)
     const params = transactionsQuerySchema.parse(searchParams)
 
-    const { search, cabinetId, page, limit } = params
+    const { search, cabinetId, startDate, endDate, page, limit } = params
     const offset = (page - 1) * limit
 
     const conditions = []
@@ -22,6 +23,12 @@ export async function GET(req: NextRequest) {
     }
     if (cabinetId) {
       conditions.push(eq(transactions.cabinetId, cabinetId))
+    }
+    if (startDate) {
+      conditions.push(gte(transactions.swappedAt, jakartaDayStart(startDate)))
+    }
+    if (endDate) {
+      conditions.push(lt(transactions.swappedAt, jakartaDayEndExclusive(endDate)))
     }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined

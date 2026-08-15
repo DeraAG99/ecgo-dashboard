@@ -1,4 +1,4 @@
-type Branch = {
+export type Branch = {
   id: string;
   name: string;
   lat: number;
@@ -7,7 +7,7 @@ type Branch = {
   active: boolean;
 };
 
-type CheckIn = {
+export type CheckIn = {
   userId: string;
   lat: number;
   lng: number;
@@ -15,16 +15,16 @@ type CheckIn = {
   at: string;
 };
 
-type RejectReason = 'NO_BRANCH_ASSIGNED' | 'LOW_ACCURACY' | 'INVALID_COORDINATE';
+export type RejectReason = 'NO_BRANCH_ASSIGNED' | 'LOW_ACCURACY' | 'INVALID_COORDINATE';
 
-type Result =
+export type Result =
   | { status: 'VALID'; branchId: string; branchName: string; distanceM: number }
   | { status: 'OUT_OF_RANGE'; nearestBranchId: string | null; distanceM: number | null }
   | { status: 'REJECTED'; reason: RejectReason };
 
 const EARTH_RADIUS = 6371008.8;
 
-function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+export function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const toRad = (deg: number) => deg * Math.PI / 180;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);

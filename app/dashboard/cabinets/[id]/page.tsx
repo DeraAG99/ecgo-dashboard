@@ -5,6 +5,7 @@ import { useParams, useRouter, notFound } from "next/navigation"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
 import StatusBadge from "@/components/shared/StatusBadge"
+import SlotGrid from "@/components/ui/SlotGrid/SlotGrid"
 import type { Slot } from "@/lib/schema"
 
 interface CabinetDetailData {
@@ -22,14 +23,6 @@ interface CabinetDetailData {
     swappedAt: Date
   }[]
   chartData: { hour: string; count: number }[]
-}
-
-const SLOT_STYLES: Record<string, { border: string; text: string; badge: string; pulse?: boolean }> = {
-  FULL: { border: "border-t-ecgo-green", text: "text-ecgo-green", badge: "bg-ecgo-green/10 text-ecgo-green" },
-  CHARGING: { border: "border-t-charging", text: "text-charging", badge: "bg-charging/10 text-charging", pulse: true },
-  EMPTY: { border: "", text: "text-on-surface-variant/50", badge: "text-on-surface-variant/70" },
-  LOCKED: { border: "border-t-error", text: "text-error", badge: "bg-error/10 text-error" },
-  FAULT: { border: "border-t-fault", text: "text-fault", badge: "bg-fault/10 text-fault" },
 }
 
 export default function CabinetDetail() {
@@ -72,8 +65,9 @@ export default function CabinetDetail() {
   if (error) return <ErrorMessage message={error} />
   if (!cabinet) return null
 
-  const totalSwap24h = cabinet.chartData.reduce((acc, c) => acc + c.count, 0)
-  const maxChart = Math.max(...cabinet.chartData.map((c) => c.count), 1)
+const totalSwap24h = cabinet.chartData.reduce((acc, c) => acc + c.count, 0)
+const maxChart = Math.max(...cabinet.chartData.map((c) => c.count), 1)
+const stale = cabinet.status === "OFFLINE"
 
   return (
     <>
@@ -122,7 +116,7 @@ export default function CabinetDetail() {
                 <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-fault"></div> Fault</span>
               </div>
             </div>
-            <SlotGrid slots={cabinet.slots} />
+            <SlotGrid slots={cabinet.slots} stale={stale} />
           </div>
         </div>
 
@@ -173,60 +167,6 @@ export default function CabinetDetail() {
         <TransactionList transactions={cabinet.swapHistory} />
       </div>
     </>
-  )
-}
-
-function SlotGrid({ slots }: { slots: Slot[] }) {
-  const total = Math.max(slots.length, 12)
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-      {Array.from({ length: total }, (_, i) => {
-        const slot = slots.find((s) => s.slotNumber === i + 1)
-        const style = SLOT_STYLES[slot?.state ?? "EMPTY"] ?? SLOT_STYLES["EMPTY"]!
-        const isEmpty = !slot || slot.state === "EMPTY"
-
-        if (isEmpty) {
-          return (
-            <div
-              key={i + 1}
-              className="relative bg-surface-variant/50 rounded-lg p-4 flex flex-col items-center justify-center min-h-[140px] border border-dashed border-outline-variant"
-            >
-              <span className="absolute top-2 left-2 text-label-caps text-on-surface-variant/50">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <div className="font-headline-md text-on-surface-variant/50">--</div>
-              <span className="text-label-caps mt-2 text-on-surface-variant/70">EMPTY</span>
-            </div>
-          )
-        }
-
-        return (
-          <div
-            key={i + 1}
-            className={`relative bg-surface-container rounded-lg p-4 flex flex-col items-center justify-center min-h-[140px] border-t-4 ${style.border} shadow-sm hover:shadow-md transition-shadow cursor-pointer ${style.pulse ? "animate-pulse-glow" : ""}`}
-          >
-            <span className="absolute top-2 left-2 text-label-caps text-on-surface-variant">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            <div className={`font-display text-display ${style.text}`}>
-              {slot?.soc != null ? `${slot.soc}%` : "--"}
-            </div>
-            <span className={`text-label-caps mt-2 px-2 py-1 rounded ${style.badge} flex items-center gap-1`}>
-              {slot?.state === "CHARGING" && (
-                <span className="material-symbols-outlined text-[14px]">bolt</span>
-              )}
-              {slot?.state === "LOCKED" && (
-                <span className="material-symbols-outlined text-[14px]">lock</span>
-              )}
-              {slot?.state === "FAULT" && (
-                <span className="material-symbols-outlined text-[14px]">warning</span>
-              )}
-              {slot?.state}
-            </span>
-          </div>
-        )
-      })}
-    </div>
   )
 }
 

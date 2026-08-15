@@ -1,4 +1,4 @@
-import CabinetTable from "@/components/ui/CabinetTable"
+import CabinetTable from "@/components/ui/Cabinet/CabinetTable"
 
 export const metadata = {
   title: "Daftar Cabinet - ECGO Swap",

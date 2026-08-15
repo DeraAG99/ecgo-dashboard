@@ -31,14 +31,14 @@ app/
 │   ├── page.tsx                   # Overview / KPI
 │   ├── cabinets/
 │   │   ├── page.tsx               # Daftar Cabinet (CabinetTable)
-│   │   └── [id]/page.tsx          # Detail Cabinet (SlotGrid, chart, TransactionList inline)
+│   │   └── [id]/page.tsx          # Detail Cabinet (SlotGrid dari components/ui/SlotGrid, chart & TransactionList inline)
 │   └── transactions/page.tsx      # Riwayat transaksi
 ├── page.tsx                       # Redirect ke /dashboard
 ├── layout.tsx + globals.css
 components/
 ├── layout/   (DashboardLayout, Sidebar, Topbar)
 ├── shared/   (LoadingSpinner, ErrorMessage, StatusBadge)
-└── ui/       (CabinetTable)
+└── ui/       (per domain: Cabinet/, SlotGrid/ dst.)
 lib/
 ├── checkin/  (evaluateCheckin.ts + test — Bagian C)
 ├── db.ts     # Koneksi database (Drizzle)
@@ -110,7 +110,7 @@ bun run build
 bun run start
 ```
 
-> ⚠️ **docker-compose.yml membaca credential hanya dari file `.env.prod`** (gitignored, tidak di-commit). Saat deploy ke VM, workflow `deploy.yml` otomatis menulis `.env.prod` dari GitHub secrets, menjalankan `db:migrate`, dan `db:seed` hanya saat database kosong (first deploy). Untuk testing lokal, `cp .env.example .env.prod` lalu isi nilai secara manual.
+> ⚠️ **docker-compose.yml membaca credential hanya dari file `.env.prod`** (gitignored, tidak di-commit). File ini disiapkan **manual sekali di VM** (`cp .env.example .env.prod` lalu isi). Workflow `deploy.yml` tinggal memakainya: `up postgres` → `db:migrate` → `db:seed` (hanya saat DB kosong) → `up dashboard`. Untuk testing lokal, `cp .env.example .env.prod` lalu isi nilai secara manual.
 
 ---
 

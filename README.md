@@ -36,7 +36,7 @@ bun run dev
 
 `docker-compose.yml` menyediakan postgres internal di port 5432, di-mapping ke host `5432:5432`. Mode ini dipakai saat deployment ke VM (di VM tidak ada Postgres lokal, jadi aman). Untuk tes Docker lokal di mesin dev yang sudah memakai Postgres di 5432, stop dulu Postgres lokalnya.
 
-Credential dibaca **hanya dari file `.env.prod`** (gitignored, tidak di-commit). Di VM, workflow `deploy.yml` otomatis menulis `.env.prod` dari GitHub secrets sebelum `docker compose up`.
+Credential dibaca **hanya dari file `.env.prod`** (gitignored, tidak di-commit). File ini disiapkan **manual sekali di VM** (`cp .env.example .env.prod` lalu isi credential); workflow `deploy.yml` hanya memakainya, tidak menulis.
 
 Untuk testing lokal (urutan sama dengan deploy workflow: postgres → build → migrate → seed → app):
 ```bash
@@ -55,7 +55,7 @@ docker compose --env-file .env.prod up -d
 
 > `docker compose up` akan **error** jika `POSTGRES_PASSWORD` / `DATABASE_URL` kosong (guard `:?`). Jangan pernah commit nilai asli credential ke repo.
 
-> Saat **deploy ke VM**, workflow `deploy.yml` otomatis: menulis `.env.prod` dari GitHub secrets → `up postgres` → `build` → `db:migrate` → `db:seed` (**hanya** saat database masih kosong, first deploy) → `up dashboard`. Jadi tidak perlu setup manual di VM.
+> Saat **deploy ke VM**, workflow `deploy.yml` hanya butuh `.env.prod` sudah ada di VM (disiapkan manual sekali). Urutan: `up postgres` → `build` → `db:migrate` → `db:seed` (**hanya** saat database masih kosong, first deploy) → `up dashboard` → health check.
 
 ## Database Configuration
 
@@ -177,16 +177,16 @@ bun run start        # Run production server
 
 `.github/workflows/deploy.yml` menjalankan lint, typecheck, test (coverage), dan build pada setiap push/PR ke `main`. Test memakai mock (`vi.mock("@/lib/db")`), jadi **tidak butuh Postgres** di CI.
 
-Push ke `main` yang sukses memicu deploy ke VM via Cloudflare Tunnel dengan urutan: menulis `.env.prod` dari secrets → `up postgres` → `build` → `db:migrate` → `db:seed` (hanya saat DB kosong) → `up dashboard`.
+Push ke `main` yang sukses memicu deploy ke VM via Cloudflare Tunnel dengan urutan: `up postgres` → `build` → `db:migrate` → `db:seed` (hanya saat DB kosong) → `up dashboard` → health check. `.env.prod` dibaca dari VM (disiapkan manual sekali).
 
-Butuh secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_PRIVATE_KEY_FILENAME`, `SSH_PORT`, `POSTGRES_PASSWORD` (opsional `NEXT_PUBLIC_APP_URL`). Lokasi app di VM via repo var `APP_DIR` (default `/opt/ecgo-dashboard`).
+Butuh secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_PRIVATE_KEY_FILENAME`, `SSH_PORT`. Lokasi app di VM via repo var `APP_DIR` (default `/opt/ecgo-dashboard`). Credential DB tidak lewat GitHub — semua di `.env.prod` VM.
 
 ## Yang Belum Selesai
 
 - [x] Unit testing (validasi Zod, logic check-in, API routes, components — 62 tests)
 - [x] Code coverage ≥ 80% (All files: 96.9% statements, 86.2% branches, 92% functions)
-- [x] CI/CD workflow auto-deploy (deploy.yml: tulis .env.prod + migrate + seed saat first deploy)
-- [ ] Stale indicator visual untuk cabinet OFFLINE di slot grid (asumsi #3 tercatat di README, visual belum diimplementasikan)
+- [x] CI/CD workflow auto-deploy (deploy.yml: migrate + seed saat first deploy; .env.prod manual di VM)
+- [x] Stale indicator visual untuk cabinet OFFLINE di slot grid (Asumsi #3 — grid redup + banner "Cabinet OFFLINE", via `components/ui/SlotGrid`)
 - [x] Verifikasi `docker compose build` lokal (image oven/bun sukses dengan flag streaming-install workaround)
 - [ ] E2E testing
 - [ ] Dark mode

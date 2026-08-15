@@ -50,7 +50,7 @@
 ## Phase 7: Deployment ⏳
 - [x] Dockerize Next.js app (Dockerfile pakai oven/bun, COPY bun.lock, CMD bun run start)
 - [x] Workflow CI/CD deploy.yml (lint, typecheck, test mock DB, build, validate compose)
-- [x] Deploy ke VM via Cloudflare Tunnel: tulis .env.prod dari secrets → up postgres → build → migrate → seed (hanya saat DB kosong) → up dashboard
+- [x] Deploy ke VM via Cloudflare Tunnel: .env.prod manual di VM → up postgres → build → migrate → seed (hanya saat DB kosong) → up dashboard → health check
 - [x] Verifikasi `docker compose build` lokal (image oven/bun sukses dengan flag streaming-install workaround)
 - [ ] Deploy ke server staging
 - [ ] Deploy ke server production
@@ -61,13 +61,24 @@
 - [x] eslint.config.js tambah ignores (.next, coverage, drizzle, mockup, dll)
 - [x] Alias script `seed` → `npm run seed` sesuai spek take-home
 - [x] Postgres host mapping docker-compose 5432 (docker postgres dikhususkan untuk deploy VM; docs diselaraskan)
+- [x] Restructure `components/ui/` per domain (Cabinet/, SlotGrid/ — tiap folder + test)
+- [x] Extract SlotGrid dari page detail → `components/ui/SlotGrid` + test (66 total test)
+- [x] Stale indicator cabinet OFFLINE (Asumsi #3: grid redup + banner saat OFFLINE)
 
 > Catatan: Docker postgres (host 5432) dikhususkan untuk deploy VM; dev memakai Postgres lokal 5432.
 
 ---
 
+## Phase 9: Future / Real-time ⏳
+- [ ] Ganti polling 30 detik → WebSocket agar data real time
+  - Titik polling saat ini: `components/ui/Cabinet/CabinetTable.tsx` (daftar) & `app/dashboard/cabinets/[id]/page.tsx` (detail), keduanya `setInterval 30s`
+  - Arsitektur: Next 15 App Router belum punya WebSocket native → server WS terpisah (socket.io/ws) atau `pg LISTEN/NOTIFY` + push ke client
+  - Perhatian deploy: koneksi long-lived melewati Cloudflare Tunnel (proxy timeout) perlu penanganan
+
+---
+
 ## Statistik
-- **Total Tasks:** 46
-- **Completed:** 44
+- **Total Tasks:** 50
+- **Completed:** 47
 - **In Progress:** 0
-- **Pending:** 2
+- **Pending:** 3

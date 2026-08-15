@@ -94,10 +94,6 @@ function TransactionsInner() {
             Monitor and verify all battery swap operations across the network.
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded shadow-sm hover:bg-surface-container-low transition-colors text-on-surface-variant text-body-sm">
-          <span className="material-symbols-outlined text-[18px]">download</span>
-          Export CSV
-        </button>
       </div>
 
       <div className="bg-surface-container-lowest rounded-lg shadow-sm border border-outline-variant p-4 mb-6 flex flex-wrap gap-4 items-center justify-between">

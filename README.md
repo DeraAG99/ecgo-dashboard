@@ -22,50 +22,50 @@ bun install
 
 # 4. Buat tabel database via migration
 # PowerShell: set DATABASE_URL inline karena drizzle-kit tidak membaca .env.local
-$env:DATABASE_URL="postgresql://postgres:password@localhost:5432/ecgo_dashboard"; npm run db:migrate
+$env:DATABASE_URL="postgresql://postgres:password@localhost:5432/ecgo_dashboard"; bun run db:migrate
 
 # 5. Seed data awal (50 cabinets, 600 slots, 20k transaksi)
-$env:DATABASE_URL="postgresql://postgres:password@localhost:5432/ecgo_dashboard"; npm run db:seed
+$env:DATABASE_URL="postgresql://postgres:password@localhost:5432/ecgo_dashboard"; bun run db:seed
 
 # 6. Jalankan development server
-npm run dev
+bun run dev
 # Buka http://localhost:3000
 ```
 
 ### Mode 2: Deploy VM (PostgreSQL via Docker)
 
-`docker-compose.yml` menyediakan postgres internal di port 5432 (di-mapping ke host 5433 agar tidak bentrok dengan postgres dev). Dipakai saat deployment ke VM.
+`docker-compose.yml` menyediakan postgres internal di port 5432, di-mapping ke host `5432:5432`. Mode ini dipakai saat deployment ke VM (di VM tidak ada Postgres lokal, jadi aman). Untuk tes Docker lokal di mesin dev yang sudah memakai Postgres di 5432, stop dulu Postgres lokalnya.
 
 Credential dibaca **hanya dari file `.env.prod`** (gitignored, tidak di-commit). Di VM, workflow `deploy.yml` otomatis menulis `.env.prod` dari GitHub secrets sebelum `docker compose up`.
 
-Untuk testing lokal:
+Untuk testing lokal (urutan sama dengan deploy workflow: postgres → build → migrate → seed → app):
 ```bash
-# 1. Buat .env.prod dari template
+# 1. Buat .env.prod dari template, lalu sesuaikan POSTGRES_PASSWORD & DATABASE_URL
 cp .env.example .env.prod
-cat > .env.prod <<EOF
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=password_kuat
-POSTGRES_DB=ecgo_dashboard
-DATABASE_URL=postgresql://postgres:password_kuat@postgres:5432/ecgo_dashboard
-EOF
 
-# 2. Jalankan
+# 2. Jalankan sesuai urutan
 docker compose --env-file .env.prod up -d postgres
 docker compose --env-file .env.prod build
+docker compose --env-file .env.prod run --rm -T dashboard bun run db:migrate
+docker compose --env-file .env.prod run --rm -T dashboard bun run db:seed
 docker compose --env-file .env.prod up -d
 ```
 
-> `docker compose up` akan **error** jika `POSTGRES_PASSWORD` / `DATABASE_URL` kosong (guard `:?`). Jangan pernah commit nilai asli credential ke repo. Di VM, credentials diisi via GitHub secrets oleh workflow deploy.
+> **PowerShell** (Windows): `cp` diganti `Copy-Item .env.example .env.prod`. Nilai `.env.prod` ditulis manual di file tsb.
+
+> `docker compose up` akan **error** jika `POSTGRES_PASSWORD` / `DATABASE_URL` kosong (guard `:?`). Jangan pernah commit nilai asli credential ke repo.
+
+> Saat **deploy ke VM**, workflow `deploy.yml` otomatis: menulis `.env.prod` dari GitHub secrets → `up postgres` → `build` → `db:migrate` → `db:seed` (**hanya** saat database masih kosong, first deploy) → `up dashboard`. Jadi tidak perlu setup manual di VM.
 
 ## Database Configuration
 
 - **Dev:** PostgreSQL lokal `localhost:5432` (bukan Docker) — gunakan `postgres/password`
-- **VM/Docker:** postgres container internal `postgres:5432`, di-mapping ke host `5433`
+- **VM/Docker:** postgres container internal `postgres:5432`, di-mapping ke host `5432`
 
 | Mode | Host | Port | Database | User | Password |
 |------|------|------|----------|------|----------|
 | Dev | localhost | 5432 | ecgo_dashboard | postgres | password |
-| VM (Docker) | localhost (host mapping) | 5433 | ecgo_dashboard | postgres | dari `.env` |
+| VM (Docker) | localhost (host mapping) | 5432 | ecgo_dashboard | postgres | dari `.env.prod` |
 
 > Kedua mode memakai skema & seed script yang sama; perbedaan hanya di `DATABASE_URL`.
 
@@ -164,8 +164,9 @@ bun run test         # Vitest (watch mode); gunakan "bunx vitest run" untuk seka
 bunx vitest run --coverage  # Coverage (target ≥80%; saat ini 96.9% statements, 92% functions)
 
 # Database (butuh $env:DATABASE_URL inline di PowerShell)
-npm run db:migrate   # Apply migration (drizzle/migrations)
-npm run db:seed      # Seed 50 cabinets, 600 slots, 20k transaksi
+bun run db:migrate   # Apply migration (drizzle/migrations)
+bun run db:seed      # Seed 50 cabinets, 600 slots, 20k transaksi
+npm run seed         # Alias sama dengan db:seed (sesuai spek take-home)
 
 # Build & Deploy
 bun run build        # Build untuk production
@@ -174,13 +175,19 @@ bun run start        # Run production server
 
 ## CI/CD
 
-`.github/workflows/deploy.yml` otomatis menjalankan lint, typecheck, test (coverage), dan build pada setiap push/PR ke `main`. Push ke `main` yang sukses juga memicu deploy ke VM via SSH (butuh secrets `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_PORT`, `POSTGRES_PASSWORD`, `DATABASE_URL`; lokasi app di VM via repo var `APP_DIR`, default `/opt/ecgo-dashboard`).
+`.github/workflows/deploy.yml` menjalankan lint, typecheck, test (coverage), dan build pada setiap push/PR ke `main`. Test memakai mock (`vi.mock("@/lib/db")`), jadi **tidak butuh Postgres** di CI.
+
+Push ke `main` yang sukses memicu deploy ke VM via Cloudflare Tunnel dengan urutan: menulis `.env.prod` dari secrets → `up postgres` → `build` → `db:migrate` → `db:seed` (hanya saat DB kosong) → `up dashboard`.
+
+Butuh secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_PRIVATE_KEY_FILENAME`, `SSH_PORT`, `POSTGRES_PASSWORD` (opsional `NEXT_PUBLIC_APP_URL`). Lokasi app di VM via repo var `APP_DIR` (default `/opt/ecgo-dashboard`).
 
 ## Yang Belum Selesai
 
 - [x] Unit testing (validasi Zod, logic check-in, API routes, components — 62 tests)
-- [x] Code coverage ≥ 80% (All files: 96.9% statements, 86.11% branches, 92% functions)
-- [x] CI/CD workflow auto-deploy (deploy.yml sudah siap, butuh secrets)
+- [x] Code coverage ≥ 80% (All files: 96.9% statements, 86.2% branches, 92% functions)
+- [x] CI/CD workflow auto-deploy (deploy.yml: tulis .env.prod + migrate + seed saat first deploy)
+- [ ] Stale indicator visual untuk cabinet OFFLINE di slot grid (asumsi #3 tercatat di README, visual belum diimplementasikan)
+- [x] Verifikasi `docker compose build` lokal (image oven/bun sukses dengan flag streaming-install workaround)
 - [ ] E2E testing
 - [ ] Dark mode
 - [ ] Deploy ke VM staging & production (workflow siap, tinggal set secrets & repo vars)

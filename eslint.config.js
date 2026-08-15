@@ -20,5 +20,18 @@ export default tseslint.config(
         ...globals.node,
       },
     },
+  },
+  {
+    ignores: [
+      "node_modules/**",
+      ".next/**",
+      "out/**",
+      "coverage/**",
+      "drizzle/**",
+      "mockup/**",
+      "docs/**",
+      ".github/**",
+      "next-env.d.ts",
+    ],
   }
 )

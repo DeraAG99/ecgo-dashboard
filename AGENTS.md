@@ -19,31 +19,42 @@ Buat dashboard internal untuk tim operasional ECGO memantau cabinet battery swap
 
 app/
 ├── api/
-│   ├── cabinets/route.ts          # GET list cabinets (filter, search, sort, pagination)
-│   └── cabinets/[id]/route.ts      # GET detail cabinet
-├── page.tsx                         # Halaman utama (Daftar Cabinet)
-└── cabinets/[id]/page.tsx          # Halaman detail cabinet
+│   ├── cabinets/
+│   │   ├── route.ts               # GET list (filter, search, sort, pagination)
+│   │   ├── [id]/route.ts          # GET detail (slots, 20 transaksi, chart 24h)
+│   │   └── export/route.ts        # GET CSV export
+│   ├── dashboard/route.ts         # GET KPI overview
+│   └── transactions/
+│       ├── route.ts               # GET list transaksi (filter, pagination)
+│       └── export/route.ts        # GET CSV export
+├── dashboard/
+│   ├── page.tsx                   # Overview / KPI
+│   ├── cabinets/
+│   │   ├── page.tsx               # Daftar Cabinet (CabinetTable)
+│   │   └── [id]/page.tsx          # Detail Cabinet (SlotGrid, chart, TransactionList inline)
+│   └── transactions/page.tsx      # Riwayat transaksi
+├── page.tsx                       # Redirect ke /dashboard
+├── layout.tsx + globals.css
 components/
-├── ui/
-│   ├── CabinetTable.tsx
-│   ├── SlotGrid.tsx
-│   ├── SwapChart.tsx
-│   └── TransactionList.tsx
-├── shared/
-│   ├── LoadingSpinner.tsx
-│   └── ErrorMessage.tsx
+├── layout/   (DashboardLayout, Sidebar, Topbar)
+├── shared/   (LoadingSpinner, ErrorMessage, StatusBadge)
+└── ui/       (CabinetTable)
 lib/
-├── db.ts                          # Koneksi database (Drizzle)
-└── schema.ts                      # Schema Drizzle
+├── checkin/  (evaluateCheckin.ts + test — Bagian C)
+├── db.ts     # Koneksi database (Drizzle)
+├── schema.ts # Schema Drizzle
+├── validation.ts  # Schema Zod terpusat
+└── test-utils.ts  # Helper mock untuk test
 drizzle/
 ├── migrations/
-└── seed.ts                        # Seed script
-types/
-└── index.ts
-.docker/
-├── Dockerfile
-├── docker-compose.yml
+└── seed.ts   # Seed 50 cabinets, 600 slots, 20k transaksi
+types/index.ts
+mockup/        # Design mockups (static HTML + screenshot)
+docs/          # Soal, jawaban, tracker
+.github/workflows/deploy.yml
 .env.local
+docker-compose.yml
+Dockerfile
 drizzle.config.ts
 next.config.ts
 tailwind.config.ts
@@ -80,47 +91,47 @@ Response: Cabinet detail with slots, 24h transactions, chart data
 ## 🚀 DEVELOPMENT COMMANDS
 
 ```bash
-# Setup
-docker-compose up -d postgres
-cp .env.example .env.local
-npm install
-npm run db:push        # Initial migration
-npm run db:seed        # Seed 20k transactions
+# Setup (dev: Postgres Windows lokal port 5432, bukan Docker)
+bun install
+# PowerShell: set DATABASE_URL inline karena drizzle-kit tidak membaca .env.local
+$env:DATABASE_URL="postgresql://postgres:password@localhost:5432/ecgo_dashboard"; bun run db:migrate
+$env:DATABASE_URL="postgresql://postgres:password@localhost:5432/ecgo_dashboard"; bun run db:seed   # atau: npm run seed
 
 # Development
-npm run dev            # http://localhost:3000
+bun run dev            # http://localhost:3000
 
 # Quality checks
-npm run lint
-npm run typecheck
-npm run test           # vitest
+bun run lint
+bun run typecheck
+bun run test           # vitest (watch); gunakan "bunx vitest run" untuk sekali jalan / CI
 
 # Build & Start
-npm run build
-npm run start
+bun run build
+bun run start
 ```
 
-> ⚠️ **docker-compose.yml membaca credential hanya dari file `.env.prod`** (gitignored, tidak di-commit). Workflow `deploy.yml` otomatis menulis `.env.prod` dari GitHub secrets sebelum deploy. Untuk testing lokal, `cp .env.example .env.prod` lalu isi nilai secara manual.
+> ⚠️ **docker-compose.yml membaca credential hanya dari file `.env.prod`** (gitignored, tidak di-commit). Saat deploy ke VM, workflow `deploy.yml` otomatis menulis `.env.prod` dari GitHub secrets, menjalankan `db:migrate`, dan `db:seed` hanya saat database kosong (first deploy). Untuk testing lokal, `cp .env.example .env.prod` lalu isi nilai secara manual.
 
 ---
 
 ## 🔑 KONFINAN DATABASE
 
-PostgreSQL via Docker:
-- Host: localhost
-- Port: 5432
-- Database: ecgo_dashboard
-- User: postgres
-- Password: postgres
+- **Dev:** PostgreSQL Windows lokal `localhost:5432` (bukan Docker) — user/password `postgres/password`
+- **VM/Docker:** container `postgres:5432` (internal), di-mapping ke host `5432` — credential dari `.env.prod`
+
+| Mode | Host | Port | Database | User | Password |
+|------|------|------|----------|------|----------|
+| Dev | localhost | 5432 | ecgo_dashboard | postgres | password |
+| VM (Docker) | localhost (host mapping) | 5432 | ecgo_dashboard | postgres | dari `.env.prod` |
 
 ---
 
 ## 🧪 TESTING
 
 ```bash
-npm run test              # Run tests
-npm run test:watch        # Watch mode
-npm run test:coverage     # Coverage report
+bun run test              # Run tests
+bun run test:watch        # Watch mode
+bun run test:coverage     # Coverage report
 ```
 
 ---
@@ -148,29 +159,12 @@ npm run test:coverage     # Coverage report
 
 ## 📦 DEPENDENCIES
 
-```json
-{
-  "dependencies": {
-    "@faker-js/faker": "^8.0.2",
-    "drizzle-orm": "^0.31.1",
-    "next": "15.2.4",
-    "react": "18.3.3",
-    "react-dom": "18.3.3",
-    "recharts": "^2.12.7",
-    "zod": "^3.23.8"
-  },
-  "devDependencies": {
-    "typescript": "^5.5.3",
-    "tailwindcss": "^3.4.21",
-    "drizzle-kit": "^0.31.1",
-    "vitest": "^1.6.0",
-    "jsdom": "^26.0.0"
-  }
-}
-```
+Daftar dependency selalu lihat `package.json` (jangan hardcode versi di sini agar tidak drift). Inti: Next.js 15, React 18, drizzle-orm + pg, zod, recharts, @faker-js/faker, tailwindcss; dev: vitest + happy-dom + @testing-library, drizzle-kit, typescript, eslint, bun sebagai package manager (file lock: `bun.lock`).
+
+> ⚠️ **Workaround:** Dockerfile & job CI `deploy.yml` set `BUN_FEATURE_FLAG_DISABLE_STREAMING_INSTALL=1`. Ini workaround untuk bug streaming tarball extraction bun ≥ 1.3.13 (error `Fail extracting tarball for next`) yang tidak stabil di Docker. **Hapus** flag + komentar ini begitu bun rilis "streaming install stability fix" (cek release notes; perkiraan ≥ 1.3.15).
 
 ---
 
 ## 🚀 CI/CD
 
-Update `.github/workflows/deploy.yml` untuk deployment vm setelah selesai. Pastikan secrets `POSTGRES_PASSWORD` & `DATABASE_URL` diatur di GitHub repository secrets (Environment: production).
+`.github/workflows/deploy.yml` sudah selesai: CI (lint, typecheck, test dengan mock DB, build) + deploy ke VM via Cloudflare Tunnel dengan urutan `up postgres` → `build` → `db:migrate` → `db:seed` (hanya saat DB kosong) → `up dashboard`. Pastikan secrets di GitHub repository secrets (Environment: production): `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_PRIVATE_KEY_FILENAME`, `SSH_PORT`, `POSTGRES_PASSWORD`, dan repo var `APP_DIR`.

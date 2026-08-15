@@ -11,6 +11,8 @@ jobs:
   ci:
     name: Lint, Test & Build
     runs-on: ubuntu-latest
+    env:
+      BUN_FEATURE_FLAG_DISABLE_STREAMING_INSTALL: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -53,13 +55,55 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           private_key_value: ${{ secrets.SSH_PRIVATE_KEY }}
-          private_key_filename: ${{ secrets.SSH_PRIVATE_KEY_FILENAME }} 
+          private_key_filename: ${{ secrets.SSH_PRIVATE_KEY_FILENAME }}
           port: ${{ secrets.SSH_PORT }}
           commands: |
             set -e
             cd "${APP_DIR:-/opt/ecgo-dashboard}"
             git pull origin main
-            docker compose --env-file .env.prod pull
-            docker compose --env-file .env.prod up -d --build
+
+            # Tulis .env.prod dari GitHub secrets (jangan pernah di-commit)
+            cat > .env.prod <<'EOF'
+            POSTGRES_USER=postgres
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            POSTGRES_DB=ecgo_dashboard
+            DATABASE_URL=postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/ecgo_dashboard
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+            EOF
+
+            # 1. Start Postgres dulu
+            docker compose --env-file .env.prod up -d postgres
+
+            # 2. Build image dashboard
+            docker compose --env-file .env.prod build
+
+            # 3. Jalankan migration (idempotent, aman di re-deploy)
+            docker compose --env-file .env.prod run --rm -T dashboard bun run db:migrate
+
+            # 4. Seed hanya saat database masih kosong (first deploy)
+            COUNT=$(docker compose --env-file .env.prod exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT COUNT(*) FROM cabinets"' 2>/dev/null || echo 0)
+            if [ "$COUNT" = "0" ]; then
+              echo "Database kosong, menjalankan seed..."
+              docker compose --env-file .env.prod run --rm -T dashboard bun run db:seed
+            else
+              echo "Database sudah berisi data, skip seed."
+            fi
+
+            # 5. Start aplikasi
+            docker compose --env-file .env.prod up -d dashboard
+
+            # 6. Health check aplikasi (gagal loudly kalau app tidak siap)
+            for i in $(seq 1 30); do
+              if curl -sf http://localhost:3000/api/dashboard > /dev/null 2>&1; then
+                echo "Aplikasi siap!"
+                break
+              fi
+              sleep 2
+              if [ "$i" = "30" ]; then
+                echo "Aplikasi tidak merespons setelah 60 detik" >&2
+                exit 1
+              fi
+            done
+
             docker image prune -f
             echo "✅ Deploy selesai!"

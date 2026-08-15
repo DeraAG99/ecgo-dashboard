@@ -1,7 +1,7 @@
 # Development Phases - ECGO Battery Swap Dashboard
 
 > **Status (updated 14 Aug 2026):** Fase 1-6 ✅ selesai. Fase 7 ⏳ pending (workflow deploy + deploy VM).
-> **Keputusan penting:** Dev memakai PostgreSQL lokal `localhost:5432` (`postgres/password`); postgres Docker (host 5433) dikhususkan untuk deploy VM. API anti-N+1 memakai single SQL query; skema validasi Zod terpusat di `lib/validation.ts`. Package manager: **Bun** (`bun.lock`); DB migration-driven via `drizzle/migrations` + `db:migrate`.
+> **Keputusan penting:** Dev memakai PostgreSQL lokal `localhost:5432` (`postgres/password`); postgres Docker (host 5432) dikhususkan untuk deploy VM. API anti-N+1 memakai single SQL query; skema validasi Zod terpusat di `lib/validation.ts`. Package manager: **Bun** (`bun.lock`); DB migration-driven via `drizzle/migrations` + `db:migrate`.
 
 ## Fase 1: Foundation (Hari 1-2)
 
@@ -123,9 +123,9 @@ Pastikan semua komponen dan API berfungsi dengan baik.
 - [x] Tulis unit tests untuk utils (62 tests: `lib/validation.test.ts`, `lib/checkin/evaluateCheckin.test.ts`)
 - [x] Tulis unit tests untuk API routes (mock `@/lib/db`)
 - [x] Tulis component tests (StatusBadge, CabinetTable, Sidebar, Topbar)
-- [x] Jalankan `npm run lint`
-- [x] Jalankan `npm run typecheck`
-- [x] Jalankan `npm run test`
+- [x] Jalankan `bun run lint`
+- [x] Jalankan `bun run typecheck`
+- [x] Jalankan `bun run test`
 - [x] Perbaiki semua error/warning
 - [x] Optimasi performa (anti-N+1 single SQL query, agregasi chart di DB, index `cabinets_status`, `slots_cabinet_id`, `transactions_cabinet_swapped`)
 - [x] Code coverage ≥ 80% (All files: 96.9% statements, 86.11% branches, 92% functions)

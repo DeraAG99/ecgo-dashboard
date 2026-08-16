@@ -2,7 +2,7 @@ import { sql, type SQL, type SQLWrapper } from "drizzle-orm"
 import { WIB_ZONE } from "./time"
 
 function atZone(expr: SQLWrapper): SQL {
-  return sql`${expr} AT TIME ZONE 'Asia/Jakarta'`
+  return sql`${expr} AT TIME ZONE '${sql.raw(WIB_ZONE)}'`
 }
 
 export function wibDateKey(expr: SQLWrapper): SQL<string> {

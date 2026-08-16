@@ -22,29 +22,44 @@ app/
 │   ├── cabinets/
 │   │   ├── route.ts               # GET list (filter, search, sort, pagination)
 │   │   ├── [id]/route.ts          # GET detail (slots, 20 transaksi, chart 24h)
+│   │   ├── map/route.ts           # GET data peta (lat/lng/radiusM/status)
 │   │   └── export/route.ts        # GET CSV export
+│   ├── batteries/
+│   │   ├── route.ts               # GET list baterai (filter, search, sort, pagination)
+│   │   └── [id]/route.ts          # GET detail baterai
 │   ├── checkins/
 │   │   └── route.ts               # POST check-in (evaluateCheckIn) + GET riwayat
 │   ├── swaps/
 │   │   └── route.ts               # POST swap (gate ketat oleh check-in VALID 15m)
+│   ├── alerts/
+│   │   ├── route.ts               # GET list (+unread) · POST scan · PATCH mark all read
+│   │   └── [id]/route.ts          # PATCH mark satu read
+│   ├── forecast/route.ts          # GET proyeksi swap (branch?, days 1-14)
 │   ├── dashboard/route.ts         # GET KPI overview
 │   └── transactions/
 │       ├── route.ts               # GET list transaksi (filter, pagination)
 │       └── export/route.ts        # GET CSV export
 ├── dashboard/
 │   ├── page.tsx                   # Overview / KPI
+│   ├── map/page.tsx + layout.tsx  # Peta cabinet (Leaflet; metadata di layout.tsx karena page client; CabinetMap import "leaflet/dist/leaflet.css" + invalidateSize)
 │   ├── cabinets/
 │   │   ├── page.tsx               # Daftar Cabinet (CabinetTable)
 │   │   └── [id]/page.tsx          # Detail Cabinet (SlotGrid dari components/ui/SlotGrid, chart & TransactionList inline)
+│   ├── batteries/
+│   │   ├── page.tsx               # Daftar baterai (BatteryTable)
+│   │   └── [id]/page.tsx          # Detail baterai (riwayat swap tampilkan {branch} ({cabinetCode}))
+│   ├── alerts/page.tsx            # Notifikasi (AlertList)
+│   ├── forecast/page.tsx          # Perkiraan permintaan (ForecastChart)
 │   ├── checkins/page.tsx          # Demo check-in → swap (target cabinet, radius, riwayat)
 │   └── transactions/page.tsx      # Riwayat transaksi
 ├── page.tsx                       # Redirect ke /dashboard
 ├── layout.tsx + globals.css
 components/
-├── layout/   (DashboardLayout, Sidebar, Topbar)
+├── layout/   (DashboardLayout, Sidebar, Topbar + AlertBell di Topbar)
 ├── shared/   (LoadingSpinner, ErrorMessage, StatusBadge)
-└── ui/       (per domain: Cabinet/, SlotGrid/ dst.)
+└── ui/       (per domain: Cabinet/, Battery/, Alert/, Forecast/, SlotGrid/ dst.)
 lib/
+├── alerts/   (scanAlerts.ts + test — deteksi 4 tipe alert + dedupe unresolved)
 ├── checkin/  (evaluateCheckin.ts + test — Bagian C; export haversine & tipe Branch/CheckIn/Result)
 ├── db.ts     # Koneksi database (Drizzle)
 ├── schema.ts # Schema Drizzle
@@ -53,7 +68,7 @@ lib/
 └── test-utils.ts  # Helper mock untuk test
 drizzle/
 ├── migrations/
-└── seed.ts   # Seed 50 cabinets (+lat/lng/radiusM), 600 slots, 20k transaksi, 20 check-ins
+└── seed.ts   # Seed 50 cabinets (+lat/lng/radiusM), 600 slots, 1000 baterai, 20k transaksi, 20 check-ins, 30 alerts
 types/index.ts
 mockup/        # Design mockups (static HTML + screenshot)
 docs/          # Soal, jawaban, tracker
@@ -85,11 +100,22 @@ phase.md
 - `check_in_result`: VALID, OUT_OF_RANGE, REJECTED
 - `check_in_reason`: LOW_ACCURACY, INVALID_COORDINATE, NO_BRANCH_ASSIGNED
 
+### Battery Enum
+- `battery_status`: AVAILABLE, IN_USE, CHARGING, FAULT, RETIRED
+
+### Alert Enums
+- `alert_type`: CABINET_OFFLINE, SLOT_FAULT, BATTERY_LOW, SWAP_ANOMALY
+- `alert_severity`: INFO, WARNING, CRITICAL
+
 ### Check-in Flow (Fitur tambahan)
 - `cabinets` punya kolom `lat`, `lng`, `radiusM` (target geofence).
 - Tabel `checkins`: riwayat hasil `evaluateCheckIn` (VALID/OUT_OF_RANGE/REJECTED).
 - `POST /api/swaps` **hanya jalan** bila ada check-in VALID ≤ 15 menit utk user tsb **dan** cabang cabinet = cabang check-in; lalu INSERT transaksi (`tx-...`, battery `BATT-XXXXXXXX`) + update slot `FULL→EMPTY`, `EMPTY→CHARGING`.
 - Note tipe: `lib/schema.ts` dan `lib/checkin/evaluateCheckin.ts` sama-sama mengekspor tipe `CheckIn` → alias saat import dua-duanya.
+
+### Alerts (Fitur tambahan)
+- `lib/alerts/scanAlerts.ts` mendeteksi 4 tipe: CABINET_OFFLINE (status OFFLINE→CRITICAL / MAINTENANCE→WARNING), SLOT_FAULT (state FAULT/LOCKED), BATTERY_LOW (health < 20), SWAP_ANOMALY (swap 24h > 2.5× rata-rata harian).
+- Dedupe: alert baru dibuat hanya jika **belum ada alert unresolved** untuk kombinasi `type + entityId` (scanAlerts pakai raw SQL `NOT EXISTS`).
 
 ---
 
@@ -101,6 +127,32 @@ Response: `{ id, code, branch, status, filledSlots, totalSlots, swapCount24h, la
 
 ### GET /api/cabinets/:id
 Response: Cabinet detail with slots, 24h transactions, chart data
+
+### GET /api/cabinets/map
+Response: `{ id, code, branch, status, lat, lng, radiusM, filledSlots, totalSlots }[]` (untuk Leaflet)
+
+### GET /api/batteries
+Query params: `search`, `status`, `minHealth`, `sortBy`, `sortOrder`, `page`, `limit`
+Response: `{ id, batteryCode, status, cycleCount, health, cabinetId, cabinetCode, branch, lastSwapAt }[]` + pagination
+
+### GET /api/batteries/:id
+Response: Battery detail
+
+### GET /api/forecast
+Query params: `branch` (kode cabinet), `days` (1-14, default 7)
+Response: `{ branch, days, totalActual, totalPredicted, avgPerDayActual, avgPerDayPredicted, peakHour, historicalDaily, forecastDaily, hourlyPattern, byCabinet }`. Prediksi = profil rata-rata `dow`+`hour` (window 60 hari) di-scale rata-rata harian aktual; tanggal prediksi mulai besok WIB.
+
+### GET /api/alerts
+Query params: `type`, `severity`, `read`, `page`, `limit` → `{ data, total, totalPages, unread }`
+
+### POST /api/alerts
+Jalankan scan (`lib/alerts/scanAlerts.ts`) → `{ scanned, created }`
+
+### PATCH /api/alerts
+Mark **semua** read → `{ updated }`
+
+### PATCH /api/alerts/:id
+Mark **satu** read
 
 ### POST /api/checkins
 Body (Zod `checkInSchema`): `{ userId, lat, lng, accuracyM }` → panggil `evaluateCheckIn` → INSERT ke `checkins` → 201 `{ checkIn, result }`
@@ -155,7 +207,7 @@ bun run start
 
 - **Zona tunggal:** WIB (UTC+7). Semua kolom waktu di DB memakai `timestamp` tanpa timezone; data disimpan sebagai wall time WIB.
 - **docker-compose.yml** menyetel `TZ: Asia/Jakarta` (+ `PGTZ: Asia/Jakarta`) di service `postgres` dan `TZ: Asia/Jakarta` di service `dashboard`.
-- **UI** merender semua waktu via `formatJakarta()` dari `lib/time.ts` (paksa `timeZone: "Asia/Jakarta"` eksplisit, bukan default browser). Dipakai di: `CabinetTable.tsx`, `cabinets/[id]/page.tsx` (×2), `transactions/page.tsx`, `checkins/page.tsx`.
+- **UI** merender semua waktu via `formatJakarta()` dari `lib/time.ts` (paksa `timeZone: "Asia/Jakarta"` eksplisit, bukan default browser). Dipakai di: `CabinetTable.tsx`, `cabinets/[id]/page.tsx` (×2), `transactions/page.tsx`, `checkins/page.tsx`, `AlertList.tsx`, `AlertBell.tsx`.
 - **Filter tanggal** `/api/transactions` + export diinterpretasikan sebagai **WIB** (via `jakartaDayStart`/`jakartaDayEndExclusive`; `endDate` inclusive).
 - **KPI dashboard** "swap hari ini" pakai `jakartaTodayStart()` dan label `weeklyTrend` pakai `jakartaDateKey()` — tidak bergantung timezone host/server.
 - ⚠️ **Ganti TZ → wajib re-seed** (data lama akan tergeser offset). Saat deploy ulang setelah ubah TZ, hapus/seed ulang DB.
@@ -170,6 +222,11 @@ bun run test:watch        # Watch mode
 bun run test:coverage     # Coverage report
 ```
 
+- **153 test** (vitest + happy-dom + @testing-library). Coverage saat ini 97.88% lines/statements, 82.56% branches, 90.36% functions (threshold: 80/70/80/80).
+- Test API route memakai mock `@/lib/db` (tidak butuh Postgres). Verifikasi live: Docker Postgres port 5432 + `bun run dev`/`bun run build && bun run start`.
+
+> ⚠️ **Next.js 15:** page yang `"use client"` **tidak boleh** `export const metadata` — pindahkan ke `layout.tsx` segment tsb (contoh: `app/dashboard/map/page.tsx` client → metadata ada di `app/dashboard/map/layout.tsx`).
+
 ---
 
 ## 📋 IMPLEMENTATION ORDER
@@ -180,6 +237,7 @@ bun run test:coverage     # Coverage report
 4. UI components
 5. Seeding data
 6. Testing & lint
+7. Fitur tambahan: Map → Batteries → Forecast → Alerts (semua ✅)
 
 ---
 

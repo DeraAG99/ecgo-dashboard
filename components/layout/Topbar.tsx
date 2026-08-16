@@ -1,11 +1,17 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import AlertBell from "@/components/ui/Alert/AlertBell"
 
 const TITLES: { match: string; title: string }[] = [
   { match: "/dashboard/cabinets/", title: "Cabinet List" },
   { match: "/dashboard/cabinets", title: "Cabinet List" },
   { match: "/dashboard/transactions", title: "Transactions" },
+  { match: "/dashboard/map", title: "Map" },
+  { match: "/dashboard/batteries/", title: "Batteries" },
+  { match: "/dashboard/batteries", title: "Batteries" },
+  { match: "/dashboard/alerts", title: "Notifications" },
+  { match: "/dashboard/forecast", title: "Forecast" },
   { match: "/dashboard", title: "Dashboard" },
   { match: "/maintenance", title: "Maintenance" },
   { match: "/settings", title: "Settings" },
@@ -58,7 +64,7 @@ export default function Topbar() {
           Refresh Data
         </button>
         <div className="flex items-center gap-3 border-l border-outline-variant pl-4">
-          <Icon name="notifications" />
+          <AlertBell />
           <Icon name="account_circle" />
         </div>
       </div>

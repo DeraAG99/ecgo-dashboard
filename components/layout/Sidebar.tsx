@@ -8,6 +8,10 @@ const NAV_ITEMS = [
   { href: "/dashboard/cabinets", label: "Cabinet List", icon: "battery_charging_full" },
   { href: "/dashboard/transactions", label: "Transactions", icon: "receipt_long" },
   { href: "/dashboard/checkins", label: "Check-in", icon: "location_on" },
+  { href: "/dashboard/map", label: "Map", icon: "map" },
+  { href: "/dashboard/batteries", label: "Batteries", icon: "battery_charging_full" },
+  { href: "/dashboard/alerts", label: "Notifications", icon: "notifications" },
+  { href: "/dashboard/forecast", label: "Forecast", icon: "query_stats" },
   { href: "/maintenance", label: "Maintenance", icon: "build" },
   { href: "/settings", label: "Settings", icon: "settings" },
 ]

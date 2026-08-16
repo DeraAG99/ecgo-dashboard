@@ -1,9 +1,11 @@
 import { db } from "@/lib/db"
-import { cabinets, slots, transactions, checkins } from "@/lib/schema"
+import { cabinets, slots, transactions, checkins, batteries, alerts } from "@/lib/schema"
 import { evaluateCheckIn } from "@/lib/checkin/evaluateCheckin"
 import { faker } from "@faker-js/faker"
 
 const JAKARTA_CENTER = { lat: -6.2, lng: 106.82 }
+
+const BATTERY_POOL_SIZE = 1000
 
 const BRANCHES = [
   "Kemayoran",
@@ -17,10 +19,20 @@ const BRANCHES = [
 ]
 
 async function clearData() {
+  await db.delete(alerts)
+  await db.delete(batteries)
   await db.delete(checkins)
   await db.delete(transactions)
   await db.delete(slots)
   await db.delete(cabinets)
+}
+
+function buildBatteryPool(size: number = BATTERY_POOL_SIZE): string[] {
+  const pool = new Set<string>()
+  while (pool.size < size) {
+    pool.add(`BATT-${faker.string.alphanumeric({ length: 8 }).toUpperCase()}`)
+  }
+  return Array.from(pool)
 }
 
 async function seedCabinets(count: number = 50) {
@@ -99,7 +111,7 @@ async function seedSlots(cabinetIds: string[]) {
   }
 }
 
-async function seedTransactions(cabinetIds: string[], count: number = 20000) {
+async function seedTransactions(cabinetIds: string[], count: number = 20000, batteryPool: string[]) {
   const now = new Date()
 
   for (let i = 0; i < count; i++) {
@@ -121,9 +133,39 @@ async function seedTransactions(cabinetIds: string[], count: number = 20000) {
       id: `tx-${String(i + 1).padStart(6, "0")}`,
       cabinetId,
       userId,
-      oldBatteryId: `BATT-${faker.string.alphanumeric({ length: 8 }).toUpperCase()}`,
-      newBatteryId: `BATT-${faker.string.alphanumeric({ length: 8 }).toUpperCase()}`,
+      oldBatteryId: faker.helpers.arrayElement(batteryPool),
+      newBatteryId: faker.helpers.arrayElement(batteryPool),
       swappedAt,
+    })
+  }
+}
+
+async function seedBatteries(batteryPool: string[], cabinetIds: string[]) {
+  const now = new Date()
+  const statuses: Array<"AVAILABLE" | "IN_USE" | "CHARGING" | "FAULT" | "RETIRED"> = [
+    "AVAILABLE",
+    "AVAILABLE",
+    "IN_USE",
+    "CHARGING",
+    "FAULT",
+    "RETIRED",
+  ]
+
+  for (let i = 0; i < batteryPool.length; i++) {
+    const batteryCode = batteryPool[i]!
+    const cycleCount = faker.number.int({ min: 0, max: 500 })
+    const health = Math.max(5, Math.min(100, Math.round(100 - cycleCount * 0.12 + faker.number.int({ min: -5, max: 5 }))))
+    const status = health < 20 ? "RETIRED" : faker.helpers.arrayElement(statuses)
+
+    await db.insert(batteries).values({
+      id: `bat-${String(i + 1).padStart(4, "0")}`,
+      batteryCode,
+      status,
+      cycleCount,
+      health,
+      cabinetId: status === "IN_USE" ? null : faker.helpers.arrayElement(cabinetIds),
+      lastSwapAt: faker.date.recent(30, now),
+      createdAt: faker.date.past(180, now),
     })
   }
 }
@@ -207,9 +249,66 @@ async function seedCheckIns(count: number = 20) {
   }
 }
 
+async function seedAlerts(cabinetIds: string[], batteryPool: string[], count: number = 30) {
+  const now = new Date()
+  const types = ["CABINET_OFFLINE", "SLOT_FAULT", "BATTERY_LOW", "SWAP_ANOMALY"] as const
+
+  for (let i = 0; i < count; i++) {
+    const type = faker.helpers.arrayElement(types)
+    const cabinetId = faker.helpers.arrayElement(cabinetIds)
+    const severity =
+      type === "CABINET_OFFLINE"
+        ? "CRITICAL"
+        : type === "BATTERY_LOW"
+        ? "CRITICAL"
+        : type === "SLOT_FAULT"
+        ? "WARNING"
+        : "INFO"
+
+    const templates: Record<(typeof types)[number], { title: string; message: string; entityId: string }> = {
+      CABINET_OFFLINE: {
+        title: `Cabinet ${cabinetId} offline`,
+        message: `${cabinetId} kehilangan koneksi.`,
+        entityId: cabinetId,
+      },
+      SLOT_FAULT: {
+        title: `Slot fault di ${cabinetId}`,
+        message: `Slot #${faker.number.int({ min: 1, max: 12 })} di ${cabinetId} tidak berfungsi.`,
+        entityId: `${cabinetId}-slot-${faker.number.int({ min: 1, max: 12 })}`,
+      },
+      BATTERY_LOW: {
+        title: `Baterai ${faker.helpers.arrayElement(batteryPool)} perlu diganti`,
+        message: `Kesehatan baterai di bawah 20%.`,
+        entityId: `bat-${String(faker.number.int({ min: 1, max: 1000 })).padStart(4, "0")}`,
+      },
+      SWAP_ANOMALY: {
+        title: `Lonjakan swap di ${cabinetId}`,
+        message: `${cabinetId} mencatat swap di atas rata-rata.`,
+        entityId: cabinetId,
+      },
+    }
+
+    const tpl = templates[type]
+
+    await db.insert(alerts).values({
+      id: `al-${String(i + 1).padStart(3, "0")}-${faker.string.alphanumeric(4)}`,
+      type,
+      severity,
+      title: tpl.title,
+      message: tpl.message,
+      entityId: tpl.entityId,
+      read: Math.random() < 0.5,
+      createdAt: faker.date.recent(7, now),
+    })
+  }
+}
+
 async function main() {
   console.log("Clearing existing data...")
   await clearData()
+
+  console.log("Building battery pool...")
+  const batteryPool = buildBatteryPool()
 
   console.log("Seeding cabinets...")
   const cabinetIds = await seedCabinets(50)
@@ -217,11 +316,17 @@ async function main() {
   console.log("Seeding slots...")
   await seedSlots(cabinetIds)
 
+  console.log("Seeding batteries...")
+  await seedBatteries(batteryPool, cabinetIds)
+
   console.log("Seeding transactions...")
-  await seedTransactions(cabinetIds, 20000)
+  await seedTransactions(cabinetIds, 20000, batteryPool)
 
   console.log("Seeding check-ins...")
   await seedCheckIns(20)
+
+  console.log("Seeding alerts...")
+  await seedAlerts(cabinetIds, batteryPool)
 
   console.log("Seeding complete!")
   process.exit(0)

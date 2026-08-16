@@ -24,7 +24,7 @@ bun install
 # PowerShell: set DATABASE_URL inline karena drizzle-kit tidak membaca .env.local
 $env:DATABASE_URL="postgresql://postgres:password@localhost:5432/ecgo_dashboard"; bun run db:migrate
 
-# 5. Seed data awal (50 cabinets, 600 slots, 20k transaksi)
+# 5. Seed data awal (50 cabinets, 600 slots, 1000 baterai, 20k transaksi, 20 check-in, 30 alerts)
 $env:DATABASE_URL="postgresql://postgres:password@localhost:5432/ecgo_dashboard"; bun run db:seed
 
 # 6. Jalankan development server
@@ -117,6 +117,36 @@ Daftar semua cabinet dengan filter & pagination.
 ### GET /api/cabinets/:id
 Detail cabinet dengan slot, transaksi, dan grafik.
 
+### GET /api/cabinets/map
+Daftar cabinet ringkas untuk peta: `{ id, code, branch, status, lat, lng, radiusM, filledSlots, totalSlots }`. Dipakai halaman `/dashboard/map` (Leaflet).
+
+### GET /api/batteries
+Daftar baterai dengan filter & pagination.
+
+**Query Params:** `search` (kode/cabang), `status`, `minHealth`, `sortBy` (health, cycleCount, status), `sortOrder`, `page`, `limit`.
+
+### GET /api/batteries/:id
+Detail baterai.
+
+### GET /api/forecast
+Proyeksi swap harian berdasarkan pola historis.
+
+**Query Params:** `branch` (kode cabinet; default semua), `days` (1–14, default 7).
+
+**Response:** `{ branch, days, totalActual, totalPredicted, avgPerDayActual, avgPerDayPredicted, peakHour, historicalDaily, forecastDaily, hourlyPattern, byCabinet }`. Prediksi dihitung dari profil rata-rata swap per `dow`+`hour` (window 60 hari) lalu di-scale ke rata-rata harian aktual; tanggal prediksi mulai besok (WIB).
+
+### GET /api/alerts
+Daftar alert/notifikasi. **Query Params:** `type`, `severity`, `read`, `page`, `limit`. Response `{ data, total, totalPages, unread }` (`unread` = jumlah alert belum dibaca).
+
+### POST /api/alerts
+Jalankan scan alert manual (`lib/alerts/scanAlerts.ts`) — deteksi CABINET_OFFLINE, SLOT_FAULT, BATTERY_LOW (health < 20), SWAP_ANOMALY (swap 24h > 2.5× rata-rata harian). Alert dibuat hanya jika belum ada alert tak-teratasi untuk kombinasi `type + entityId`. Response `{ scanned, created }`.
+
+### PATCH /api/alerts
+Tandai **semua** alert sebagai dibaca. Response `{ updated }`.
+
+### PATCH /api/alerts/:id
+Tandai **satu** alert sebagai dibaca.
+
 ### POST /api/checkins
 Check-in lokasi staf/user terhadap radius cabang (geofence). Body: `{ userId, lat, lng, accuracyM }`.
 
@@ -201,6 +231,25 @@ Eksekusi swap baterai, **di-gate ketat** oleh check-in:
 
 > Cabang (cabinet) kini memiliki `lat`, `lng`, `radiusM` (meter) sebagai target geofence check-in.
 
+### Batteries
+- `id`: string (primary key, `bat-...`)
+- `batteryCode`: string (unik, `BATT-XXXXXXXX`)
+- `status`: ENUM ('AVAILABLE', 'IN_USE', 'CHARGING', 'FAULT', 'RETIRED')
+- `cycleCount`: integer
+- `health`: integer (0-100)
+- `cabinetId`: string (FK ke cabinets, null jika tersimpan di pool)
+- `lastSwapAt` / `createdAt`: timestamp
+
+### Alerts
+- `id`: string (primary key, `al-...`)
+- `type`: ENUM ('CABINET_OFFLINE', 'SLOT_FAULT', 'BATTERY_LOW', 'SWAP_ANOMALY')
+- `severity`: ENUM ('INFO', 'WARNING', 'CRITICAL')
+- `title`/`message`: teks
+- `entityId`: string (cabinet/slot/battery terkait, null jika umum)
+- `read`: boolean
+- `resolvedAt`: timestamp (null)
+- `createdAt`: timestamp
+
 ## Development Commands
 
 ```bash
@@ -208,11 +257,11 @@ Eksekusi swap baterai, **di-gate ketat** oleh check-in:
 bun run lint         # ESLint
 bun run typecheck    # TypeScript
 bun run test         # Vitest (watch mode); gunakan "bunx vitest run" untuk sekali jalan / CI
-bunx vitest run --coverage  # Coverage (target ≥80%; saat ini 96.9% statements, 92% functions)
+bunx vitest run --coverage  # Coverage (target ≥80%; saat ini 97.88% statements/lines, 90.36% functions)
 
 # Database (butuh $env:DATABASE_URL inline di PowerShell)
 bun run db:migrate   # Apply migration (drizzle/migrations)
-bun run db:seed      # Seed 50 cabinets, 600 slots, 20k transaksi
+bun run db:seed      # Seed 50 cabinets, 600 slots, 1000 baterai, 20k transaksi, 30 alerts
 npm run seed         # Alias sama dengan db:seed (sesuai spek take-home)
 
 # Build & Deploy
@@ -230,13 +279,19 @@ Butuh secrets: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_PRIVATE_KEY_FILEN
 
 ## Yang Belum Selesai
 
-- [x] Unit testing (validasi Zod, logic check-in, API routes, components — 62 tests)
-- [x] Code coverage ≥ 80% (All files: 96.9% statements, 86.2% branches, 92% functions)
+- [x] Unit testing (validasi Zod, logic check-in, API routes, components — 153 tests)
+- [x] Code coverage ≥ 80% (All files: 97.88% statements/lines, 82.56% branches, 90.36% functions)
 - [x] CI/CD workflow auto-deploy (deploy.yml: migrate + seed saat first deploy; .env.prod manual di VM)
 - [x] Stale indicator visual untuk cabinet OFFLINE di slot grid (Asumsi #3 — grid redup + banner "Cabinet OFFLINE", via `components/ui/SlotGrid`)
 - [x] Verifikasi `docker compose build` lokal (image oven/bun sukses dengan flag streaming-install workaround)
+- [x] **Map view** — peta cabinet Leaflet di `/dashboard/map` (marker status + radius geofence, auto-refresh 30s)
+- [x] **Battery management** — daftar & detail baterai di `/dashboard/batteries` (+ link kode baterai di riwayat transaksi)
+- [x] **Demand forecasting** — proyeksi swap di `/dashboard/forecast` (pola per jam + prediksi harian + per cabinet)
+- [x] **Alert & notifications** — daftar alert di `/dashboard/alerts`, bell notifikasi di Topbar, scan manual & mark-as-read
 - [ ] E2E testing
 - [ ] Dark mode
+- [ ] Notifikasi real-time (WebSocket / pg LISTEN-NOTIFY) — saat ini polling 30s di Topbar & halaman map
+- [ ] Cache hasil forecast (mis. Redis, TTL 1-2 menit) — saat ini 4 query SQL per request
 - [ ] Deploy ke VM staging & production (workflow siap, tinggal set secrets & repo vars)
 
 ## AI Tools

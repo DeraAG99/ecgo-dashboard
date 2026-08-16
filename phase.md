@@ -1,7 +1,7 @@
 # Development Phases - ECGO Battery Swap Dashboard
 
-> **Status (updated 14 Aug 2026):** Fase 1-6 ✅ selesai. Fase 7 ⏳ pending (workflow deploy + deploy VM).
-> **Keputusan penting:** Dev memakai PostgreSQL lokal `localhost:5432` (`postgres/password`); postgres Docker (host 5432) dikhususkan untuk deploy VM. API anti-N+1 memakai single SQL query; skema validasi Zod terpusat di `lib/validation.ts`. Package manager: **Bun** (`bun.lock`); DB migration-driven via `drizzle/migrations` + `db:migrate`.
+> **Status (updated 16 Aug 2026):** Fase 1-5 ✅ selesai. Fase 6 ⏳ pending (deploy VM: staging + production). Fitur tambahan (Map, Battery, Forecast, Alert) ✅ selesai & terverifikasi.
+> **Keputusan penting:** Dev memakai PostgreSQL lokal `localhost:5432` (`postgres/password`); postgres Docker (host 5432) dikhususkan untuk deploy VM dan juga dipakai untuk verifikasi live (saat Postgres lokal di-stop). API anti-N+1 memakai single SQL query; skema validasi Zod terpusat di `lib/validation.ts`. Package manager: **Bun** (`bun.lock`); DB migration-driven via `drizzle/migrations` + `db:migrate`.
 
 ## Fase 1: Foundation (Hari 1-2)
 
@@ -143,8 +143,8 @@ Pastikan semua komponen dan API berfungsi dengan baik.
 Deploy ke lingkungan production.
 
 ### Tasks
-- [x] Setup Docker production image (Dockerfile ada, `docker-compose build` berhasil)
-- [ ] Update workflow deployment di GitHub Actions
+- [x] Setup Docker production image (Dockerfile ada, `docker compose build` berhasil)
+- [x] Update workflow deployment di GitHub Actions
 - [ ] Deploy ke staging server
 - [ ] Uji di staging
 - [ ] Deploy ke production
@@ -152,6 +152,39 @@ Deploy ke lingkungan production.
 ### Deliverables
 - Aplikasi running di production
 - URL yang bisa diakses tim operasional
+
+---
+
+## Fase 7: Fitur Tambahan — Map, Battery, Forecast, Alert ✅
+
+### Map View (Leaflet)
+- [x] `GET /api/cabinets/map` — data lat/lng/radiusM/status untuk peta
+- [x] `components/ui/Cabinet/CabinetMap.tsx` — marker per status + circle geofence + popup
+- [x] `/dashboard/map` — dynamic import `ssr:false` (metadata dipindah ke `layout.tsx` karena page client component), auto-refresh 30s
+- [x] Fix tile abu-abu: `import "leaflet/dist/leaflet.css"` (sebelumnya hilang → tile tak terposisi) + `invalidateSize` (whenReady + rAF + window resize) + `zoomAnimation:false` (mencegah crash `_leaflet_pos` di `_onZoomTransitionEnd`); map dibuat sekali, marker di-update via `cluster.clearLayers()`
+
+### Battery Management
+- [x] Tabel `batteries` + enum `battery_status` (migration 0002), seed 1000 baterai
+- [x] `GET /api/batteries` + `GET /api/batteries/:id`
+- [x] `/dashboard/batteries` + `/dashboard/batteries/:id`; link kode baterai di riwayat transaksi
+- [x] Riwayat swap di detail baterai tampilkan lokasi `{branch} ({cabinetCode})` (API sudah return `branch` per transaksi)
+
+### Demand Forecasting
+- [x] `GET /api/forecast` (`branch?`, `days` 1-14) — profil rata-rata per `dow`+`hour` (window 60 hari), prediksi harian WIB (mulai besok), rata-rata per cabinet
+- [x] `/dashboard/forecast` + `ForecastChart` (Recharts — warna hex `#1A2B4C`/`#00A651`, bukan CSS var)
+- [x] Verifikasi live terhadap Docker DB: `totalActual 4942`, `totalPredicted 4375`, `peakHour 11:00`
+
+### Alert & Notifications
+- [x] Tabel `alerts` + enum `alert_type`/`alert_severity` + index (migration 0003)
+- [x] `lib/alerts/scanAlerts.ts` — CABINET_OFFLINE / SLOT_FAULT / BATTERY_LOW (health<20) / SWAP_ANOMALY (swap24h > 2.5× dailyAvg); dedupe per `type+entityId` pada alert unresolved
+- [x] `GET /api/alerts` (+ `unread` count), `POST /api/alerts` (scan), `PATCH /api/alerts` (mark all), `PATCH /api/alerts/:id` (mark one)
+- [x] `/dashboard/alerts` + `AlertBell` di Topbar (badge unread, poll 30s)
+- [x] Seed 30 alert dummy
+- [x] Tests: scanAlerts (5), alerts route (8), alerts [id] (3), AlertList (7), AlertBell (4), ForecastChart (4), DashboardLayout (1) — **total suite 153 test, coverage 97.88% lines / 90.36% functions**
+
+### Catatan Teknis
+- Client component page tidak boleh `export const metadata` (Next 15) → pindah ke `app/dashboard/map/layout.tsx`.
+- Test tidak butuh Postgres (mock `@/lib/db`); verifikasi live memakai Docker Postgres (port 5432, `POSTGRES_PASSWORD=postgres`, `.env.prod`).
 
 ---
 

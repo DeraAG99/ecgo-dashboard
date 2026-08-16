@@ -101,6 +101,47 @@
 
 ---
 
+## Phase 13: Map View ✅
+- [x] GET /api/cabinets/map (data lat/lng/radiusM/status untuk peta)
+- [x] components/ui/Cabinet/CabinetMap.tsx (Leaflet, marker per status, circle geofence, popup info)
+- [x] Halaman /dashboard/map (auto-refresh 30s, dynamic import ssr:false)
+- [x] Menu Sidebar "Peta" + Topbar title
+- [x] Tests: CabinetMap (2) + route map (3)
+- [x] Fix tile tidak ter-load (kotak abu-abu): import `leaflet/dist/leaflet.css` + `invalidateSize` (rAF & window resize) + `zoomAnimation:false`; map dibuat sekali (tidak recreate tiap refresh 30s)
+
+---
+
+## Phase 14: Battery Management ✅
+- [x] Schema tabel `batteries` + enum `battery_status` (migration 0002)
+- [x] Seed 1000 baterai (status, cycleCount, health, cabinet assignment)
+- [x] GET /api/batteries (filter status/search/health, sort, pagination) + GET /api/batteries/[id]
+- [x] Halaman /dashboard/batteries + detail [id]; link kode baterai di riwayat transaksi
+- [x] Riwayat swap di detail baterai tampilkan lokasi: `{branch} ({cabinetCode})` (API sudah return branch)
+- [x] Tests: route batteries + detail (8) + halaman (8)
+
+---
+
+## Phase 15: Demand Forecasting ✅
+- [x] GET /api/forecast (`branch?`, `days` 1-14, default 7) — profil per jam (dow+hour, window 60 hari), prediksi harian WIB, rata-rata per cabinet
+- [x] Halaman /dashboard/forecast + ForecastChart (Recharts: bar aktual vs prediksi, line pola per jam, KPI cards, tabel per cabinet)
+- [x] Menu Sidebar "Forecast" + Topbar title
+- [x] Tests route forecast (4) + ForecastChart (4)
+- [x] Verifikasi live terhadap Docker DB (200; totalActual 4942, totalPredicted 4375, peakHour 11:00)
+
+---
+
+## Phase 16: Alert & Notifications ✅
+- [x] Schema tabel `alerts` + enum `alert_type`/`alert_severity` + index (migration 0003)
+- [x] lib/alerts/scanAlerts.ts — deteksi 4 tipe (CABINET_OFFLINE, SLOT_FAULT, BATTERY_LOW, SWAP_ANOMALY) + dedupe alert unresolved
+- [x] GET /api/alerts (list, filter, unread count), POST /api/alerts (scan), PATCH /api/alerts (mark all read), PATCH /api/alerts/[id] (mark satu read)
+- [x] Halaman /dashboard/alerts (filter severity/type, daftar, tombol scan & tandai dibaca)
+- [x] AlertBell di Topbar (badge unread + dropdown, poll 30s)
+- [x] Menu Sidebar "Notifications" + Topbar title
+- [x] Seed 30 alert dummy (clearData hapus alerts duluan)
+- [x] Tests: scanAlerts (5), route alerts (8), route alerts/[id] (3), AlertList (7), AlertBell (4), DashboardLayout (1)
+
+---
+
 ## Phase 12: Future / Real-time ⏳
 - [ ] Ganti polling 30 detik → WebSocket agar data real time
   - Titik polling saat ini: `components/ui/Cabinet/CabinetTable.tsx` (daftar) & `app/dashboard/cabinets/[id]/page.tsx` (detail), keduanya `setInterval 30s`
@@ -110,7 +151,7 @@
 ---
 
 ## Statistik
-- **Total Tasks:** 70
-- **Completed:** 67
+- **Total Tasks:** 95
+- **Completed:** 92
 - **In Progress:** 0
 - **Pending:** 3

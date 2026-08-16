@@ -40,3 +40,25 @@ export const swapSchema = z.object({
   userId: z.string().min(1),
   cabinetId: z.string().min(1),
 })
+
+export const batteriesQuerySchema = z.object({
+  search: z.string().optional(),
+  status: z.enum(["AVAILABLE", "IN_USE", "CHARGING", "FAULT", "RETIRED"]).optional(),
+  minHealth: z.coerce.number().int().min(0).max(100).optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
+  sortBy: z.enum(["batteryCode", "cycleCount", "health", "lastSwapAt"]).optional().default("batteryCode"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("asc"),
+})
+
+export const batteryParamsSchema = z.object({
+  id: z.string().min(1),
+})
+
+export const alertsQuerySchema = z.object({
+  type: z.enum(["CABINET_OFFLINE", "SLOT_FAULT", "BATTERY_LOW", "SWAP_ANOMALY"]).optional(),
+  severity: z.enum(["INFO", "WARNING", "CRITICAL"]).optional(),
+  read: z.enum(["true", "false"]).optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
+})

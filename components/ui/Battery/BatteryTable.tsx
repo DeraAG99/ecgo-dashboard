@@ -1,0 +1,261 @@
+"use client"
+
+import { useEffect, useState, useRef, useCallback, Suspense } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
+import Link from "next/link"
+import LoadingSpinner from "@/components/shared/LoadingSpinner"
+import ErrorMessage from "@/components/shared/ErrorMessage"
+import BatteryStatusBadge from "./BatteryStatusBadge"
+import { formatJakarta } from "@/lib/time"
+
+interface BatteryRow {
+  id: string
+  batteryCode: string
+  status: "AVAILABLE" | "IN_USE" | "CHARGING" | "FAULT" | "RETIRED"
+  cycleCount: number
+  health: number
+  cabinetId: string | null
+  cabinetCode: string | null
+  branch: string | null
+  lastSwapAt: Date | null
+}
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+  const timeoutRef = useRef<NodeJS.Timeout>()
+
+  useEffect(() => {
+    clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => setDebouncedValue(value), delay)
+    return () => clearTimeout(timeoutRef.current)
+  }, [value, delay])
+
+  return debouncedValue
+}
+
+function healthColor(health: number) {
+  if (health >= 80) return "bg-full"
+  if (health >= 50) return "bg-maintenance"
+  return "bg-error"
+}
+
+function BatteryTableInner() {
+  const [batteries, setBatteries] = useState<BatteryRow[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchInput, setSearchInput] = useState("")
+
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  const search = searchParams.get("search") || ""
+  const status = searchParams.get("status") || ""
+  const limit = 20
+  const debouncedSearch = useDebounce(searchInput, 300)
+
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (debouncedSearch) params.set("search", debouncedSearch)
+    if (status) params.set("status", status)
+    router.push(`/dashboard/batteries?${params.toString()}`)
+  }, [debouncedSearch, status, router])
+
+  useEffect(() => {
+    setSearchInput(search)
+  }, [search])
+
+  const fetchBatteries = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      if (search) params.set("search", search)
+      if (status) params.set("status", status)
+      params.set("page", String(page))
+      params.set("limit", String(limit))
+      const response = await fetch(`/api/batteries?${params.toString()}`)
+      if (!response.ok) throw new Error("Gagal memuat data baterai")
+      const data = await response.json()
+      setBatteries(data.data)
+      setTotal(data.total)
+      setTotalPages(data.totalPages)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan")
+    } finally {
+      setLoading(false)
+    }
+  }, [search, status, page, limit])
+
+  useEffect(() => {
+    fetchBatteries()
+  }, [fetchBatteries])
+
+  if (loading && batteries.length === 0) return <LoadingSpinner />
+  if (error) return <ErrorMessage message={error} />
+
+  const retiredCount = batteries.filter((b) => b.status === "RETIRED").length
+
+  return (
+    <div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="font-display text-display text-on-surface">Manajemen Baterai</h2>
+          <p className="text-body-sm text-on-surface-variant mt-1">
+            Pantau kondisi, siklus, dan kesehatan seluruh baterai.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative min-w-[280px]">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">
+              search
+            </span>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Cari kode baterai atau cabang..."
+              className="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm"
+            />
+          </div>
+          <div className="relative">
+            <select
+              value={status}
+              onChange={(e) => {
+                setPage(1)
+                const params = new URLSearchParams()
+                if (searchInput || search) params.set("search", searchInput || search)
+                if (e.target.value) params.set("status", e.target.value)
+                router.push(`/dashboard/batteries?${params.toString()}`)
+              }}
+              className="appearance-none w-full sm:w-auto pl-4 pr-10 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm text-on-surface font-medium focus:outline-none focus:ring-2 focus:ring-primary shadow-sm cursor-pointer"
+            >
+              <option value="">Status: ALL</option>
+              <option value="AVAILABLE">AVAILABLE</option>
+              <option value="IN_USE">IN_USE</option>
+              <option value="CHARGING">CHARGING</option>
+              <option value="FAULT">FAULT</option>
+              <option value="RETIRED">RETIRED</option>
+            </select>
+            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">
+              expand_more
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {retiredCount > 0 && (
+        <div className="mb-4 flex items-center gap-2 bg-error/5 border border-error/20 text-error text-body-sm rounded-lg px-4 py-3">
+          <span className="material-symbols-outlined text-[18px]">warning</span>
+          <span>
+            {retiredCount} baterai pada halaman ini berada di bawah ambang kesehatan dan perlu diganti.
+          </span>
+        </div>
+      )}
+
+      <div className="bg-surface-container-lowest rounded-xl shadow-card border border-outline-variant overflow-hidden mb-6">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-ecgo-blue/5 border-b border-outline-variant">
+                <th className="py-4 px-6 text-label-caps text-secondary/80 uppercase">Kode Baterai</th>
+                <th className="py-4 px-6 text-label-caps text-secondary/80 uppercase">Status</th>
+                <th className="py-4 px-6 text-label-caps text-secondary/80 uppercase">Kesehatan</th>
+                <th className="py-4 px-6 text-label-caps text-secondary/80 uppercase">Siklus</th>
+                <th className="py-4 px-6 text-label-caps text-secondary/80 uppercase">Lokasi</th>
+                <th className="py-4 px-6 text-label-caps text-secondary/80 uppercase">Swap Terakhir</th>
+                <th className="py-4 px-6 text-label-caps text-secondary/80 uppercase text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="text-body-sm text-on-surface divide-y divide-outline-variant/50">
+              {batteries.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-10 text-center text-on-surface-variant">
+                    Tidak ada data baterai
+                  </td>
+                </tr>
+              ) : (
+                batteries.map((battery) => (
+                  <tr key={battery.id} className="hover:bg-surface transition-colors">
+                    <td className="py-4 px-6 font-mono font-medium">{battery.batteryCode}</td>
+                    <td className="py-4 px-6">
+                      <BatteryStatusBadge status={battery.status} />
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-2 bg-surface-variant rounded-full overflow-hidden">
+                          <div
+                            className={`${healthColor(battery.health)} h-full rounded-full`}
+                            style={{ width: `${battery.health}%` }}
+                          ></div>
+                        </div>
+                        <span className="font-mono text-xs">{battery.health}%</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 font-mono">{battery.cycleCount}</td>
+                    <td className="py-4 px-6 text-on-surface-variant">
+                      {battery.cabinetCode ? (
+                        <Link href={`/dashboard/cabinets/${battery.cabinetId}`} className="hover:underline">
+                          {battery.branch ? `${battery.branch} (${battery.cabinetCode})` : battery.cabinetCode}
+                        </Link>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="py-4 px-6 text-on-surface-variant">
+                      {battery.lastSwapAt ? formatJakarta(battery.lastSwapAt) : "-"}
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      <Link
+                        href={`/dashboard/batteries/${battery.id}`}
+                        className="inline-flex items-center gap-1 text-primary font-medium hover:underline"
+                      >
+                        Detail <span className="material-symbols-outlined text-sm">chevron_right</span>
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <p className="text-body-sm text-on-surface-variant">
+          Menampilkan <span className="font-medium">{batteries.length}</span> dari{" "}
+          <span className="font-medium">{total}</span> baterai
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-4 py-2 border border-outline-variant rounded-lg text-body-sm hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Previous
+          </button>
+          <span className="px-4 py-2 text-body-sm text-on-surface-variant">
+            Hal {page} / {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            className="px-4 py-2 border border-outline-variant rounded-lg text-body-sm hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function BatteryTable() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <BatteryTableInner />
+    </Suspense>
+  )
+}

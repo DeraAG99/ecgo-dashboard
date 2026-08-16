@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { cabinets, slots, transactions } from "@/lib/schema"
 import { sql, gte, desc, count } from "drizzle-orm"
 import { jakartaTodayStart, jakartaDateKey } from "@/lib/time"
+import { wibDateKey } from "@/lib/time-sql"
 
 export async function GET() {
   try {
@@ -30,12 +31,12 @@ export async function GET() {
         .where(gte(transactions.swappedAt, todayStart)),
       db
         .select({
-          day: sql<string>`TO_CHAR(${transactions.swappedAt}, 'YYYY-MM-DD')`,
+          day: wibDateKey(transactions.swappedAt),
           total: count(),
         })
         .from(transactions)
         .where(gte(transactions.swappedAt, sevenDaysAgo))
-        .groupBy(sql`TO_CHAR(${transactions.swappedAt}, 'YYYY-MM-DD')`),
+        .groupBy(wibDateKey(transactions.swappedAt)),
     ])
 
     const statusMap: Record<string, number> = {

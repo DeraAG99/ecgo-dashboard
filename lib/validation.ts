@@ -62,3 +62,49 @@ export const alertsQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
 })
+
+export const workOrderStatusEnum = z.enum(["OPEN", "ASSIGNED", "IN_PROGRESS", "DONE", "CANCELLED"])
+export const workOrderPriorityEnum = z.enum(["LOW", "MEDIUM", "HIGH"])
+export const entityTypeEnum = z.enum(["CABINET", "SLOT", "BATTERY"])
+
+export const workOrdersQuerySchema = z.object({
+  status: workOrderStatusEnum.optional(),
+  priority: workOrderPriorityEnum.optional(),
+  assignedTo: z.string().optional(),
+  entityType: entityTypeEnum.optional(),
+  entityId: z.string().optional(),
+  search: z.string().optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
+})
+
+export const workOrderCreateSchema = z.object({
+  entityType: entityTypeEnum,
+  entityId: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  priority: workOrderPriorityEnum.default("MEDIUM"),
+  alertId: z.string().optional(),
+})
+
+export const workOrderUpdateSchema = z.object({
+  status: workOrderStatusEnum.optional(),
+  assignedTo: z.string().nullable().optional(),
+  priority: workOrderPriorityEnum.optional(),
+  title: z.string().optional(),
+  description: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+})
+
+export const maintenanceActionSchema = z.object({
+  action: z.enum(["LOCK", "UNLOCK", "RESET", "SET_ONLINE", "SET_OFFLINE", "SET_MAINTENANCE", "RETIRE", "FAULT", "REACTIVATE"]),
+  reason: z.string().optional(),
+})
+
+export const maintenanceLogsQuerySchema = z.object({
+  action: z.string().optional(),
+  entityType: entityTypeEnum.optional(),
+  entityId: z.string().optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(50),
+})

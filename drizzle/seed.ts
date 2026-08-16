@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { cabinets, slots, transactions, checkins, batteries, alerts } from "@/lib/schema"
+import { cabinets, slots, transactions, checkins, batteries, alerts, workOrders, maintenanceLogs } from "@/lib/schema"
 import { evaluateCheckIn } from "@/lib/checkin/evaluateCheckin"
 import { faker } from "@faker-js/faker"
 
@@ -20,6 +20,8 @@ const BRANCHES = [
 
 async function clearData() {
   await db.delete(alerts)
+  await db.delete(workOrders)
+  await db.delete(maintenanceLogs)
   await db.delete(batteries)
   await db.delete(checkins)
   await db.delete(transactions)
@@ -303,6 +305,103 @@ async function seedAlerts(cabinetIds: string[], batteryPool: string[], count: nu
   }
 }
 
+async function seedWorkOrders(cabinetIds: string[], count: number = 20) {
+  const now = new Date()
+  const technicians = ["Andi", "Budi", "Citra", "Dedi", "Eka"]
+  const priorities = ["LOW", "MEDIUM", "HIGH"] as const
+  const statuses = ["OPEN", "ASSIGNED", "IN_PROGRESS", "DONE", "CANCELLED"] as const
+
+  const alertRows = await db.select({ id: alerts.id, type: alerts.type, entityId: alerts.entityId, severity: alerts.severity }).from(alerts)
+  const batteryRows = await db
+    .select({ id: batteries.id, batteryCode: batteries.batteryCode, health: batteries.health })
+    .from(batteries)
+
+  for (let i = 0; i < count; i++) {
+    const roll = Math.random()
+    const priority = faker.helpers.arrayElement(priorities)
+    let entityType: "CABINET" | "SLOT" | "BATTERY"
+    let entityId: string
+    let title: string
+    let description: string | null = null
+    let alertId: string | null = null
+
+    if (roll < 0.5 && alertRows.length > 0) {
+      const a = faker.helpers.arrayElement(alertRows)
+      const entityTypeByAlert: Record<string, "CABINET" | "SLOT" | "BATTERY"> = {
+        CABINET_OFFLINE: "CABINET",
+        SLOT_FAULT: "SLOT",
+        BATTERY_LOW: "BATTERY",
+        SWAP_ANOMALY: "CABINET",
+      }
+      entityType = a.type ? entityTypeByAlert[a.type] ?? "CABINET" : "CABINET"
+      entityId = a.entityId ?? faker.helpers.arrayElement(cabinetIds)
+      title = a.type ? `${a.type} — ${a.entityId ?? ""}` : "Work order"
+      alertId = a.id
+    } else if (roll < 0.75) {
+      const b = faker.helpers.arrayElement(batteryRows)
+      entityType = "BATTERY"
+      entityId = b.id
+      title = `Perawatan baterai ${b.batteryCode} (health ${b.health}%)`
+    } else {
+      const c = faker.helpers.arrayElement(cabinetIds)
+      entityType = "CABINET"
+      entityId = c
+      title = `Maintenance rutin cabinet ${c}`
+      description = "Pemeriksaan berkala."
+    }
+
+    const status = faker.helpers.arrayElement(statuses)
+    const assignedTo = Math.random() < 0.6 ? faker.helpers.arrayElement(technicians) : null
+
+    await db.insert(workOrders).values({
+      id: `wo-${String(i + 1).padStart(3, "0")}-${faker.string.alphanumeric(4)}`,
+      alertId,
+      entityType,
+      entityId,
+      priority,
+      status,
+      title,
+      description,
+      assignedTo,
+      notes: null,
+      createdAt: faker.date.recent(14, now),
+      completedAt: status === "DONE" || status === "CANCELLED" ? faker.date.recent(7, now) : null,
+    })
+
+    const entityLabel =
+      entityType === "CABINET"
+        ? entityId
+        : entityType === "BATTERY"
+        ? (batteryRows.find((b) => b.id === entityId)?.batteryCode ?? entityId)
+        : `#${entityId}`
+    await db.insert(maintenanceLogs).values({
+      id: `ml-${String(i + 1).padStart(3, "0")}-${faker.string.alphanumeric(4)}`,
+      action: status === "DONE" ? "WO_COMPLETED" : status === "IN_PROGRESS" ? "WO_STARTED" : "WO_CREATED",
+      entityType,
+      entityId,
+      entityLabel,
+      detail: `priority=${priority}`,
+      createdAt: faker.date.recent(14, now),
+    })
+  }
+
+  // tambahan log status cabinet/slot/baterai secara acak
+  for (let i = 0; i < 15; i++) {
+    const actions = ["CABINET_ONLINE", "CABINET_OFFLINE", "CABINET_MAINTENANCE", "SLOT_LOCK", "SLOT_RESET", "BATTERY_RETIRE", "BATTERY_FAULT"]
+    const action = faker.helpers.arrayElement(actions)
+    const cabinetId = faker.helpers.arrayElement(cabinetIds)
+    await db.insert(maintenanceLogs).values({
+      id: `ml-extra-${i}-${faker.string.alphanumeric(4)}`,
+      action,
+      entityType: action.startsWith("CABINET") ? "CABINET" : action.startsWith("SLOT") ? "SLOT" : "BATTERY",
+      entityId: cabinetId,
+      entityLabel: cabinetId,
+      detail: "seed",
+      createdAt: faker.date.recent(14, now),
+    })
+  }
+}
+
 async function main() {
   console.log("Clearing existing data...")
   await clearData()
@@ -327,6 +426,9 @@ async function main() {
 
   console.log("Seeding alerts...")
   await seedAlerts(cabinetIds, batteryPool)
+
+  console.log("Seeding work orders & maintenance logs...")
+  await seedWorkOrders(cabinetIds)  
 
   console.log("Seeding complete!")
   process.exit(0)

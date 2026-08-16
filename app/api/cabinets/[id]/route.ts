@@ -4,6 +4,7 @@ import { cabinets, slots, transactions } from "@/lib/schema"
 import { cabinetParamsSchema } from "@/lib/validation"
 import { z } from "zod"
 import { sql, eq, desc } from "drizzle-orm"
+import { wibHour } from "@/lib/time-sql"
 
 export async function GET(req: NextRequest) {
   try {
@@ -35,11 +36,11 @@ export async function GET(req: NextRequest) {
 
     const chartData = await db.execute<{ hour: string; count: number }>(sql`
       SELECT 
-        LPAD(FLOOR(EXTRACT(HOUR FROM t.swapped_at))::TEXT, 2, '0') || ':00' as hour,
+        LPAD(FLOOR(${wibHour(sql`t.swapped_at`)})::TEXT, 2, '0') || ':00' as hour,
         COUNT(*)::int as count
       FROM ${transactions} t
       WHERE t.cabinet_id = ${id} AND t.swapped_at > NOW() - INTERVAL '24 hours'
-      GROUP BY FLOOR(EXTRACT(HOUR FROM t.swapped_at))
+      GROUP BY FLOOR(${wibHour(sql`t.swapped_at`)})
       ORDER BY hour
     `)
 

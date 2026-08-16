@@ -9,6 +9,9 @@ export const batteryStatusEnum = pgEnum("battery_status", ["AVAILABLE", "IN_USE"
 export const alertTypeEnum = pgEnum("alert_type", ["CABINET_OFFLINE", "SLOT_FAULT", "BATTERY_LOW", "SWAP_ANOMALY"])
 export const alertSeverityEnum = pgEnum("alert_severity", ["INFO", "WARNING", "CRITICAL"])
 
+export const workOrderPriorityEnum = pgEnum("work_order_priority", ["LOW", "MEDIUM", "HIGH"])
+export const workOrderStatusEnum = pgEnum("work_order_status", ["OPEN", "ASSIGNED", "IN_PROGRESS", "DONE", "CANCELLED"])
+
 export const cabinets = pgTable(
   "cabinets",
   {
@@ -20,9 +23,9 @@ export const cabinets = pgTable(
     lat: doublePrecision("lat"),
     lng: doublePrecision("lng"),
     radiusM: integer("radius_m").default(150),
-    lastHeartbeat: timestamp("last_heartbeat"),
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow(),
+    lastHeartbeat: timestamp("last_heartbeat", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [index("cabinets_status_idx").on(table.status)],
 )
@@ -38,7 +41,7 @@ export const slots = pgTable(
     slotNumber: integer("slot_number").notNull(),
     state: slotStateEnum("state").default("EMPTY"),
     soc: integer("soc"),
-    lastUpdated: timestamp("last_updated").defaultNow(),
+    lastUpdated: timestamp("last_updated", { withTimezone: true }).defaultNow(),
   },
   (table) => [index("slots_cabinet_id_idx").on(table.cabinetId)],
 )
@@ -54,7 +57,7 @@ export const transactions = pgTable(
     userId: text("user_id").notNull(),
     oldBatteryId: text("old_battery_id").notNull(),
     newBatteryId: text("new_battery_id").notNull(),
-    swappedAt: timestamp("swapped_at").defaultNow(),
+    swappedAt: timestamp("swapped_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [index("transactions_cabinet_swapped_idx").on(table.cabinetId, table.swappedAt)],
 )
@@ -74,7 +77,7 @@ export const checkins = pgTable(
     reason: checkInReasonEnum("reason"),
     branchId: text("branch_id").references(() => cabinets.id),
     distanceM: integer("distance_m"),
-    createdAt: timestamp("created_at").defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [index("checkins_user_created_idx").on(table.userId, table.createdAt)],
 )
@@ -91,8 +94,8 @@ export const batteries = pgTable(
     cycleCount: integer("cycle_count").default(0),
     health: integer("health").default(100),
     cabinetId: text("cabinet_id").references(() => cabinets.id),
-    lastSwapAt: timestamp("last_swap_at"),
-    createdAt: timestamp("created_at").defaultNow(),
+    lastSwapAt: timestamp("last_swap_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [
     index("batteries_status_idx").on(table.status),
@@ -121,8 +124,8 @@ export const alerts = pgTable(
     message: text("message").notNull(),
     entityId: text("entity_id"),
     read: boolean("read").default(false),
-    resolvedAt: timestamp("resolved_at"),
-    createdAt: timestamp("created_at").defaultNow(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [
     index("alerts_type_idx").on(table.type),
@@ -133,3 +136,51 @@ export const alerts = pgTable(
 
 export type Alert = typeof alerts.$inferSelect
 export type NewAlert = typeof alerts.$inferInsert
+
+export const workOrders = pgTable(
+  "work_orders",
+  {
+    id: text("id").primaryKey(),
+    alertId: text("alert_id").references(() => alerts.id, { onDelete: "set null" }),
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id").notNull(),
+    priority: workOrderPriorityEnum("priority").notNull().default("MEDIUM"),
+    status: workOrderStatusEnum("status").notNull().default("OPEN"),
+    title: text("title").notNull(),
+    description: text("description"),
+    assignedTo: text("assigned_to"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("work_orders_status_idx").on(table.status),
+    index("work_orders_priority_idx").on(table.priority),
+    index("work_orders_assignee_idx").on(table.assignedTo),
+    index("work_orders_entity_idx").on(table.entityType, table.entityId),
+  ],
+)
+
+export type WorkOrder = typeof workOrders.$inferSelect
+export type NewWorkOrder = typeof workOrders.$inferInsert
+
+export const maintenanceLogs = pgTable(
+  "maintenance_logs",
+  {
+    id: text("id").primaryKey(),
+    action: text("action").notNull(),
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id"),
+    entityLabel: text("entity_label"),
+    detail: text("detail"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("maintenance_logs_entity_idx").on(table.entityType, table.entityId),
+    index("maintenance_logs_created_idx").on(table.createdAt),
+  ],
+)
+
+export type MaintenanceLog = typeof maintenanceLogs.$inferSelect
+export type NewMaintenanceLog = typeof maintenanceLogs.$inferInsert

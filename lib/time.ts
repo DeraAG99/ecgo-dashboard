@@ -1,3 +1,5 @@
+export const WIB_ZONE = "Asia/Jakarta"
+
 const WIB_OFFSET_MS = 7 * 3600 * 1000
 
 export function jakartaDayStart(date: Date): Date {
@@ -9,12 +11,12 @@ export function jakartaDayEndExclusive(date: Date): Date {
 }
 
 export function jakartaDateKey(date: Date): string {
-  return date.toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" })
+  return date.toLocaleDateString("en-CA", { timeZone: WIB_ZONE })
 }
 
 export function jakartaTodayStart(): Date {
   const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Jakarta",
+    timeZone: WIB_ZONE,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -27,5 +29,5 @@ export function formatJakarta(value: Date | string | null | undefined): string {
   if (value == null) return "-"
   const date = typeof value === "string" ? new Date(value) : value
   if (Number.isNaN(date.getTime())) return "-"
-  return date.toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })
+  return date.toLocaleString("id-ID", { timeZone: WIB_ZONE })
 }

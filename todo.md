@@ -65,7 +65,17 @@
 - [x] Extract SlotGrid dari page detail → `components/ui/SlotGrid` + test (66 total test)
 - [x] Stale indicator cabinet OFFLINE (Asumsi #3: grid redup + banner saat OFFLINE)
 
-> Catatan: Docker postgres (host 5432) dikhususkan untuk deploy VM; dev memakai Postgres lokal 5432.
+---
+
+## Phase 18: Timezone Bug Fix Post-Migration (2026-08-16)
+- [x] MIGRATION FIX: Inline timezone `'Asia/Jakarta'` as SQL literal (not parameter) in `lib/time-sql.ts` to fix GROUP BY parameter mismatch after timestamp→timestamptz migration
+  - Root cause: Each call to `wibDateKey()` created separate SQL with different parameter indices ($1 vs $3)
+  - Fix: Use raw SQL literal `'Asia/Jakarta'` instead of parameter → identical expressions in SELECT & GROUP BY
+- [x] Fix `/api/dashboard` 500 error (error: "column must appear in GROUP BY")
+- [x] Fix `/api/cabinets/[id]` GROUP BY parameter mismatch for `wibHour`
+- [x] Fix `/api/forecast` GROUP BY parameter mismatch for `wibDayTrunc`, `wibDow`, `wibHour`
+- [x] Update tests in `lib/time-sql.test.ts` to expect inline timezone literals (no params)
+- [x] Verify all API endpoints work correctly
 
 ---
 
@@ -142,6 +152,18 @@
 
 ---
 
+## Phase 17: Maintenance ✅
+- [x] Schema tabel `work_orders` (13 kolom, FK alert_id → alerts.id SET NULL) + `maintenance_logs` (7 kolom) (migration 0004)
+- [x] Seed work orders dari alert/status + maintenance log awal
+- [x] API: GET/POST /api/maintenance/work-orders, GET/PATCH /api/maintenance/work-orders/[id] (assign, selesaikan, catat log), PATCH /api/maintenance/cabinets/[id], PATCH /api/maintenance/slots/[id], PATCH /api/maintenance/batteries/[id], GET /api/maintenance/logs, GET /api/maintenance/summary
+- [x] lib/maintenance: createWorkOrderFromAlert, resolveEntityForLog, addMaintenanceLog, mapAlertPriority
+- [x] Halaman /maintenance (tabs: summary, work-orders, cabinets, slots, batteries, logs) + komponen UI per domain + WorkOrderDialog
+- [x] Menu Sidebar "Maintenance" + Topbar title
+- [x] Tests: lib/maintenance (12), route maintenance (19), komponen Maintenance (26) — total 211 test
+- [x] Coverage ≥ threshold: All files Stmts 96.27, Branch 76.24, Funcs 80.45, Lines 96.27
+
+---
+
 ## Phase 12: Future / Real-time ⏳
 - [ ] Ganti polling 30 detik → WebSocket agar data real time
   - Titik polling saat ini: `components/ui/Cabinet/CabinetTable.tsx` (daftar) & `app/dashboard/cabinets/[id]/page.tsx` (detail), keduanya `setInterval 30s`
@@ -151,7 +173,7 @@
 ---
 
 ## Statistik
-- **Total Tasks:** 95
-- **Completed:** 92
+- **Total Tasks:** 106
+- **Completed:** 103
 - **In Progress:** 0
 - **Pending:** 3

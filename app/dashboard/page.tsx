@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from "recharts"
 
 interface DashboardData {
   totalCabinets: number
@@ -105,25 +106,24 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="card p-6 lg:col-span-2">
+        <div className="card p-6 lg:col-span-2 flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-headline-md text-ecgo-blue">Tren Swap Mingguan</h3>
           </div>
-          <div className="flex items-end justify-between gap-2 h-48 px-2 pb-6 pt-4">
-            {data.weeklyTrend.map((d) => (
-              <div key={d.day} className="flex-1 flex flex-col items-center group">
-                <span className="text-xs font-mono text-on-surface-variant mb-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {d.total}
-                </span>
-                <div
-                  className={`w-full rounded-t-sm ${
-                    d.total === maxTrend ? "bg-ecgo-green" : "bg-surface-container-highest group-hover:bg-ecgo-green/50"
-                  }`}
-                  style={{ height: `${Math.max((d.total / maxTrend) * 100, 4)}%` }}
-                ></div>
-                <span className="text-[10px] font-mono text-outline mt-2">{d.day}</span>
-              </div>
-            ))}
+          <div className="flex-1 min-h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.weeklyTrend} margin={{ top: 8, right: 16, bottom: 0, left: -16 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="rgba(0,0,0,0.35)" />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="rgba(0,0,0,0.35)" />
+                <Tooltip />
+                <Bar dataKey="total" name="Swap" radius={[4, 4, 0, 0]}>
+                  {data.weeklyTrend.map((d) => (
+                    <Cell key={d.day} fill={d.total === maxTrend ? "#00A651" : "#e0e3e6"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 

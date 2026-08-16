@@ -4,6 +4,7 @@ import { transactions, cabinets } from "@/lib/schema"
 import { sql } from "drizzle-orm"
 import { z } from "zod"
 import { jakartaDateKey } from "@/lib/time"
+import { wibDow, wibHour, wibDayTrunc, wibNowDayStart } from "@/lib/time-sql"
 
 const forecastQuerySchema = z.object({
   branch: z.string().optional(),
@@ -24,8 +25,8 @@ export async function GET(req: NextRequest) {
     const [profileResult, daysResult, actualResult, cabinetResult] = await Promise.all([
       db.execute<ProfileRow>(sql`
         SELECT
-          EXTRACT(DOW FROM t.swapped_at)::int AS dow,
-          EXTRACT(HOUR FROM t.swapped_at)::int AS hour,
+          ${wibDow(sql`t.swapped_at`)}::int AS dow,
+          ${wibHour(sql`t.swapped_at`)}::int AS hour,
           COUNT(*)::int AS cnt
         FROM ${transactions} t
         LEFT JOIN ${cabinets} c ON c.id = t.cabinet_id
@@ -34,26 +35,26 @@ export async function GET(req: NextRequest) {
         GROUP BY 1, 2
       `),
       db.execute<{ days: number }>(sql`
-        SELECT COUNT(DISTINCT date_trunc('day', t.swapped_at))::int AS days
+        SELECT COUNT(DISTINCT ${wibDayTrunc(sql`t.swapped_at`)})::int AS days
         FROM ${transactions} t
         LEFT JOIN ${cabinets} c ON c.id = t.cabinet_id
         WHERE t.swapped_at > NOW() - INTERVAL '60 days'
           ${branchFilter}
       `),
       db.execute<{ date: string; swaps: number }>(sql`
-        SELECT to_char(date_trunc('day', t.swapped_at), 'YYYY-MM-DD') AS date,
+        SELECT to_char(${wibDayTrunc(sql`t.swapped_at`)}, 'YYYY-MM-DD') AS date,
                COUNT(*)::int AS swaps
         FROM ${transactions} t
         LEFT JOIN ${cabinets} c ON c.id = t.cabinet_id
-        WHERE t.swapped_at >= date_trunc('day', NOW()) - INTERVAL '${sql.raw(String(days))} days'
-          AND t.swapped_at < date_trunc('day', NOW()) + INTERVAL '1 day'
+        WHERE t.swapped_at >= ${wibNowDayStart()} - INTERVAL '${sql.raw(String(days))} days'
+          AND t.swapped_at < ${wibNowDayStart()} + INTERVAL '1 day'
           ${branchFilter}
         GROUP BY 1
         ORDER BY 1
       `),
       db.execute<CabinetRow>(sql`
         SELECT c.id, c.code, c.branch,
-          COUNT(*)::float / GREATEST(COUNT(DISTINCT date_trunc('day', t.swapped_at)), 1) AS daily_avg
+          COUNT(*)::float / GREATEST(COUNT(DISTINCT ${wibDayTrunc(sql`t.swapped_at`)}), 1) AS daily_avg
         FROM ${transactions} t
         JOIN ${cabinets} c ON c.id = t.cabinet_id
         WHERE t.swapped_at > NOW() - INTERVAL '60 days'
@@ -81,7 +82,7 @@ export async function GET(req: NextRequest) {
     const forecastDaily: { date: string; predicted: number }[] = []
     for (let d = 1; d <= days; d++) {
       const key = jakartaDateKey(new Date(Date.now() + d * 86400000))
-      const dow = new Date(`${key}T00:00:00+07:00`).getUTCDay()
+      const dow = new Date(`${key}T00:00:00Z`).getUTCDay()
       const sum = profile[dow]!.reduce((acc, v) => acc + v, 0)
       forecastDaily.push({ date: key, predicted: Math.round(sum) })
     }

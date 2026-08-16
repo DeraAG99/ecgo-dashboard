@@ -34,11 +34,21 @@ app/
 │   ├── alerts/
 │   │   ├── route.ts               # GET list (+unread) · POST scan · PATCH mark all read
 │   │   └── [id]/route.ts          # PATCH mark satu read
+│   ├── maintenance/
+│   │   ├── work-orders/
+│   │   │   ├── route.ts           # GET list (filter) · POST buat manual atau dari alert
+│   │   │   └── [id]/route.ts      # PATCH assign / selesaikan → INSERT maintenance_logs
+│   │   ├── cabinets/[id]/route.ts # PATCH SET_<STATUS> (ONLINE/OFFLINE/MAINTENANCE)
+│   │   ├── slots/[id]/route.ts    # PATCH RESET → EMPTY
+│   │   ├── batteries/[id]/route.ts# PATCH REACTIVATE → AVAILABLE · RETIRE → RETIRED
+│   │   ├── logs/route.ts          # GET riwayat maintenance (paginated)
+│   │   └── summary/route.ts       # GET KPI maintenance (openWO, inProgress, done7d, dsb)
 │   ├── forecast/route.ts          # GET proyeksi swap (branch?, days 1-14)
 │   ├── dashboard/route.ts         # GET KPI overview
 │   └── transactions/
 │       ├── route.ts               # GET list transaksi (filter, pagination)
 │       └── export/route.ts        # GET CSV export
+├── maintenance/page.tsx           # Halaman Maintenance (tabs: summary/work-orders/cabinets/slots/batteries/logs; page async + await searchParams)
 ├── dashboard/
 │   ├── page.tsx                   # Overview / KPI
 │   ├── map/page.tsx + layout.tsx  # Peta cabinet (Leaflet; metadata di layout.tsx karena page client; CabinetMap import "leaflet/dist/leaflet.css" + invalidateSize)
@@ -57,10 +67,11 @@ app/
 components/
 ├── layout/   (DashboardLayout, Sidebar, Topbar + AlertBell di Topbar)
 ├── shared/   (LoadingSpinner, ErrorMessage, StatusBadge)
-└── ui/       (per domain: Cabinet/, Battery/, Alert/, Forecast/, SlotGrid/ dst.)
+└── ui/       (per domain: Cabinet/, Battery/, Alert/, Forecast/, SlotGrid/, Maintenance/ dst.)
 lib/
 ├── alerts/   (scanAlerts.ts + test — deteksi 4 tipe alert + dedupe unresolved)
 ├── checkin/  (evaluateCheckin.ts + test — Bagian C; export haversine & tipe Branch/CheckIn/Result)
+├── maintenance/ (createFromAlert.ts, entities.ts, log.ts + test — buat WO dari alert, resolve label entitas, catat log, map prioritas)
 ├── db.ts     # Koneksi database (Drizzle)
 ├── schema.ts # Schema Drizzle
 ├── time.ts   # Helper WIB (Asia/Jakarta): dayStart, dayEndExclusive, dateKey, todayStart, formatJakarta
@@ -68,7 +79,7 @@ lib/
 └── test-utils.ts  # Helper mock untuk test
 drizzle/
 ├── migrations/
-└── seed.ts   # Seed 50 cabinets (+lat/lng/radiusM), 600 slots, 1000 baterai, 20k transaksi, 20 check-ins, 30 alerts
+└── seed.ts   # Seed 50 cabinets (+lat/lng/radiusM), 600 slots, 1000 baterai, 20k transaksi, 20 check-ins, 30 alerts, work orders
 types/index.ts
 mockup/        # Design mockups (static HTML + screenshot)
 docs/          # Soal, jawaban, tracker
@@ -117,6 +128,12 @@ phase.md
 - `lib/alerts/scanAlerts.ts` mendeteksi 4 tipe: CABINET_OFFLINE (status OFFLINE→CRITICAL / MAINTENANCE→WARNING), SLOT_FAULT (state FAULT/LOCKED), BATTERY_LOW (health < 20), SWAP_ANOMALY (swap 24h > 2.5× rata-rata harian).
 - Dedupe: alert baru dibuat hanya jika **belum ada alert unresolved** untuk kombinasi `type + entityId` (scanAlerts pakai raw SQL `NOT EXISTS`).
 
+### Maintenance (Fitur tambahan)
+- Tabel `work_orders`: `id, alert_id (FK alerts SET NULL), entity_type (CABINET/SLOT/BATTERY), entity_id, entity_label, title, description, priority (LOW/MEDIUM/HIGH), status (OPEN/IN_PROGRESS/DONE), assigned_to, notes, created_at, updated_at, completed_at`.
+- Tabel `maintenance_logs`: `id, entity_type, entity_id, entity_label, action, description, created_by, created_at`.
+- Alur: `PATCH /api/maintenance/work-orders/[id]` dengan `{ action: "ASSIGN", assignedTo }` / `{ action: "COMPLETE", notes }` → jika status jadi DONE, isi `completed_at`; setiap PATCH yang mengubah state → INSERT `maintenance_logs` via `lib/maintenance/log.ts`.
+- `POST /api/maintenance/work-orders` menerima `source: "manual"` (isi langsung) atau `source: "alert"` (dari `alertId` via `lib/maintenance/createFromAlert.ts`, tarik label via `entities.ts`).
+
 ---
 
 ## 📡 API ENDPOINTS
@@ -162,6 +179,30 @@ Query params: `userId`, `result`, `page`, `limit` → riwayat paginated (LEFT JO
 
 ### POST /api/swaps
 Body (Zod `swapSchema`): `{ userId, cabinetId }`. Gate: check-in VALID ≤ 15m (`403`) → cabinet ada (`404`) → cabang cocok (`403`) → slot FULL≥1 & EMPTY≥1 (`409`) → sukses 201 `{ transaction, slotChanges }`
+
+### GET /api/maintenance/work-orders
+Query params: `status`, `page`, `limit` → `{ data, total, totalPages }` (urut updated_at desc)
+
+### POST /api/maintenance/work-orders
+Body (Zod `workOrderSchema`): `{ source: "manual" | "alert", title, description?, entityType?, entityId?, priority? }` atau `{ source: "alert", alertId }` → 201 `{ workOrder }`
+
+### PATCH /api/maintenance/work-orders/:id
+Body: `{ action: "ASSIGN", assignedTo }` / `{ action: "COMPLETE", notes }` → update WO (DONE → isi `completed_at`) + INSERT `maintenance_logs`
+
+### PATCH /api/maintenance/cabinets/:id
+Body: `{ action: "SET_ONLINE" | "SET_OFFLINE" | "SET_MAINTENANCE", reason? }` → update status + log
+
+### PATCH /api/maintenance/slots/:id
+Body: `{ action: "RESET", reason? }` → slot `→ EMPTY` + log
+
+### PATCH /api/maintenance/batteries/:id
+Body: `{ action: "REACTIVATE" | "RETIRE", reason? }` → status → AVAILABLE/RETIRED + log
+
+### GET /api/maintenance/logs
+Query params: `page`, `limit` → `{ data, total, totalPages }`
+
+### GET /api/maintenance/summary
+→ `{ openWO, inProgress, done7d, lowBattery, workOrderByPriority, recentLogs }`
 
 ---
 
@@ -222,8 +263,9 @@ bun run test:watch        # Watch mode
 bun run test:coverage     # Coverage report
 ```
 
-- **153 test** (vitest + happy-dom + @testing-library). Coverage saat ini 97.88% lines/statements, 82.56% branches, 90.36% functions (threshold: 80/70/80/80).
+- **211 test** (vitest + happy-dom + @testing-library). Coverage saat ini 96.27% lines/statements, 76.24% branches, 80.45% functions (threshold: 80/70/80/80).
 - Test API route memakai mock `@/lib/db` (tidak butuh Postgres). Verifikasi live: Docker Postgres port 5432 + `bun run dev`/`bun run build && bun run start`.
+- ⚠️ **Mock query chain maintenance:** test route PATCH `[id]` yang memakai `dbMock` + mock lib (mis. `addMaintenanceLog`) **wajib** `beforeEach(() => { vi.resetAllMocks(); <libMock>.mockResolvedValue(undefined); ... })` — `vi.clearAllMocks()` **tidak** menghapus antrian `mockReturnValueOnce`, sehingga nilai once dari test sebelumnya bocor ke test berikutnya. `resetAllMocks` juga menghapus implementasi mock lib, jadi defaultnya harus di-set ulang di beforeEach.
 
 > ⚠️ **Next.js 15:** page yang `"use client"` **tidak boleh** `export const metadata` — pindahkan ke `layout.tsx` segment tsb (contoh: `app/dashboard/map/page.tsx` client → metadata ada di `app/dashboard/map/layout.tsx`).
 
@@ -237,7 +279,7 @@ bun run test:coverage     # Coverage report
 4. UI components
 5. Seeding data
 6. Testing & lint
-7. Fitur tambahan: Map → Batteries → Forecast → Alerts (semua ✅)
+7. Fitur tambahan: Map → Batteries → Forecast → Alerts → Maintenance (semua ✅)
 
 ---
 

@@ -67,7 +67,7 @@ export default async function MaintenancePage({ searchParams }: { searchParams: 
           return (
             <a
               key={t.id}
-              href={`/maintenance?tab=${t.id}`}
+              href={`/dashboard/maintenance?tab=${t.id}`}
               className={`flex items-center gap-1.5 px-4 py-2 border-b-2 text-body-sm font-medium transition-colors ${
                 active
                   ? "border-ecgo-green text-ecgo-green"

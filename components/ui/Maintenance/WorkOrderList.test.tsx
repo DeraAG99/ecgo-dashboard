@@ -65,7 +65,7 @@ describe("WorkOrderList", () => {
 
     await screen.findByText("Ganti fan")
     fireEvent.click(screen.getByRole("button", { name: "Selesai" }))
-    expect(pushMock).toHaveBeenCalledWith("/maintenance?tab=work-orders&status=DONE")
+    expect(pushMock).toHaveBeenCalledWith("/dashboard/maintenance?tab=work-orders&status=DONE")
   })
 
   it("should advance status via quick action button", async () => {

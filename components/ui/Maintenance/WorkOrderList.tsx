@@ -96,7 +96,7 @@ export default function WorkOrderList() {
     if (value) params.set(key, value)
     else params.delete(key)
     params.delete("page")
-    router.push(`/maintenance?tab=work-orders&${params.toString()}`)
+    router.push(`/dashboard/maintenance?tab=work-orders&${params.toString()}`)
   }
 
   const goPage = (p: number) => {
@@ -105,7 +105,7 @@ export default function WorkOrderList() {
     if (assignedTo) params.set("assignedTo", assignedTo)
     if (priority) params.set("priority", priority)
     params.set("page", String(p))
-    router.push(`/maintenance?tab=work-orders&${params.toString()}`)
+    router.push(`/dashboard/maintenance?tab=work-orders&${params.toString()}`)
   }
 
   const quickAdvance = async (wo: WoRow, next: string) => {

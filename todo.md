@@ -157,7 +157,7 @@
 - [x] Seed work orders dari alert/status + maintenance log awal
 - [x] API: GET/POST /api/maintenance/work-orders, GET/PATCH /api/maintenance/work-orders/[id] (assign, selesaikan, catat log), PATCH /api/maintenance/cabinets/[id], PATCH /api/maintenance/slots/[id], PATCH /api/maintenance/batteries/[id], GET /api/maintenance/logs, GET /api/maintenance/summary
 - [x] lib/maintenance: createWorkOrderFromAlert, resolveEntityForLog, addMaintenanceLog, mapAlertPriority
-- [x] Halaman /maintenance (tabs: summary, work-orders, cabinets, slots, batteries, logs) + komponen UI per domain + WorkOrderDialog
+- [x] Halaman /dashboard/maintenance (tabs: summary, work-orders, cabinets, slots, batteries, logs) + komponen UI per domain + WorkOrderDialog
 - [x] Menu Sidebar "Maintenance" + Topbar title
 - [x] Tests: lib/maintenance (12), route maintenance (19), komponen Maintenance (26) — total 211 test
 - [x] Coverage ≥ threshold: All files Stmts 96.27, Branch 76.24, Funcs 80.45, Lines 96.27

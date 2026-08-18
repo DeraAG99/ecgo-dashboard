@@ -53,7 +53,7 @@ export default function MaintenanceLog() {
   }, [fetchLogs])
 
   const goPage = (p: number) => {
-    router.push(`/maintenance?tab=log&page=${p}`)
+    router.push(`/dashboard/maintenance?tab=log&page=${p}`)
   }
 
   if (loading && items.length === 0) return <LoadingSpinner />

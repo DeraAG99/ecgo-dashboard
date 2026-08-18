@@ -60,7 +60,7 @@ describe("BatteryMaintenanceTable", () => {
 
     await screen.findByText("BATT-001")
     fireEvent.click(screen.getByRole("button", { name: "Pensiun" }))
-    expect(pushMock).toHaveBeenCalledWith("/maintenance?tab=batteries&status=RETIRED&page=1")
+    expect(pushMock).toHaveBeenCalledWith("/dashboard/maintenance?tab=batteries&status=RETIRED&page=1")
   })
 
   it("should show empty state when no batteries need maintenance", async () => {

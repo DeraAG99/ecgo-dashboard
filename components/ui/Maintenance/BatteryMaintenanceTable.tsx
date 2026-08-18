@@ -120,7 +120,7 @@ export default function BatteryMaintenanceTable() {
           ) : (
             <button
               key={v || "all"}
-              onClick={() => router.push(`/maintenance?tab=batteries&status=${v}&page=1`)}
+              onClick={() => router.push(`/dashboard/maintenance?tab=batteries&status=${v}&page=1`)}
               className="px-3 py-1.5 rounded-full border border-outline-variant text-on-surface-variant text-label-caps hover:bg-surface-container"
             >
               {v === "" ? "Semua" : STATUS_LABEL[v]}

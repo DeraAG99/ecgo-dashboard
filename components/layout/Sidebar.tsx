@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/batteries", label: "Batteries", icon: "battery_charging_full" },
   { href: "/dashboard/alerts", label: "Notifications", icon: "notifications" },
   { href: "/dashboard/forecast", label: "Forecast", icon: "query_stats" },
-  { href: "/maintenance", label: "Maintenance", icon: "build" },
+  { href: "/dashboard/maintenance", label: "Maintenance", icon: "build" },
   { href: "/settings", label: "Settings", icon: "settings" },
 ]
 

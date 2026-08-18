@@ -58,12 +58,12 @@ Buat schema database, migrasi, dan seeding data.
 Buat REST API untuk frontend consumenya.
 
 ### Tasks
-- [x] Buat route `GET /api/cabinets`
+- [x] Buat route `GET /api/dashboard/cabinets`
   - Implementasi filter: search, status
   - Implementasi sorting: swapCount24h
   - Implementasi pagination: page, limit
   - Hitung filledSlots & swapCount24h di database (single SQL query anti-N+1)
-- [x] Buat route `GET /api/cabinets/[id]`
+- [x] Buat route `GET /api/dashboard/cabinets/[id]`
   - Detail cabinet
   - Daftar slots (ORDER BY slotNumber)
   - 20 transaksi terakhir
@@ -72,7 +72,7 @@ Buat REST API untuk frontend consumenya.
 - [x] Error handling yang konsisten
 - [ ] Rate limiting (opsional)
 
-> Tambahan di luar spec: `GET /api/dashboard` (ringkasan overview) & `GET /api/transactions` (riwayat transaksi).
+> Tambahan di luar spec: `GET /api/dashboard/dashboard` (ringkasan overview) & `GET /api/dashboard/transactions` (riwayat transaksi).
 
 ### Deliverables
 - API yang dapat dipanggil langsung lewat browser/postman
@@ -158,26 +158,26 @@ Deploy ke lingkungan production.
 ## Fase 7: Fitur Tambahan — Map, Battery, Forecast, Alert ✅
 
 ### Map View (Leaflet)
-- [x] `GET /api/cabinets/map` — data lat/lng/radiusM/status untuk peta
+- [x] `GET /api/dashboard/cabinets/map` — data lat/lng/radiusM/status untuk peta
 - [x] `components/ui/Cabinet/CabinetMap.tsx` — marker per status + circle geofence + popup
 - [x] `/dashboard/map` — dynamic import `ssr:false` (metadata dipindah ke `layout.tsx` karena page client component), auto-refresh 30s
 - [x] Fix tile abu-abu: `import "leaflet/dist/leaflet.css"` (sebelumnya hilang → tile tak terposisi) + `invalidateSize` (whenReady + rAF + window resize) + `zoomAnimation:false` (mencegah crash `_leaflet_pos` di `_onZoomTransitionEnd`); map dibuat sekali, marker di-update via `cluster.clearLayers()`
 
 ### Battery Management
 - [x] Tabel `batteries` + enum `battery_status` (migration 0002), seed 1000 baterai
-- [x] `GET /api/batteries` + `GET /api/batteries/:id`
+- [x] `GET /api/dashboard/batteries` + `GET /api/dashboard/batteries/:id`
 - [x] `/dashboard/batteries` + `/dashboard/batteries/:id`; link kode baterai di riwayat transaksi
 - [x] Riwayat swap di detail baterai tampilkan lokasi `{branch} ({cabinetCode})` (API sudah return `branch` per transaksi)
 
 ### Demand Forecasting
-- [x] `GET /api/forecast` (`branch?`, `days` 1-14) — profil rata-rata per `dow`+`hour` (window 60 hari), prediksi harian WIB (mulai besok), rata-rata per cabinet
+- [x] `GET /api/dashboard/forecast` (`branch?`, `days` 1-14) — profil rata-rata per `dow`+`hour` (window 60 hari), prediksi harian WIB (mulai besok), rata-rata per cabinet
 - [x] `/dashboard/forecast` + `ForecastChart` (Recharts — warna hex `#1A2B4C`/`#00A651`, bukan CSS var)
 - [x] Verifikasi live terhadap Docker DB: `totalActual 4942`, `totalPredicted 4375`, `peakHour 11:00`
 
 ### Alert & Notifications
 - [x] Tabel `alerts` + enum `alert_type`/`alert_severity` + index (migration 0003)
 - [x] `lib/alerts/scanAlerts.ts` — CABINET_OFFLINE / SLOT_FAULT / BATTERY_LOW (health<20) / SWAP_ANOMALY (swap24h > 2.5× dailyAvg); dedupe per `type+entityId` pada alert unresolved
-- [x] `GET /api/alerts` (+ `unread` count), `POST /api/alerts` (scan), `PATCH /api/alerts` (mark all), `PATCH /api/alerts/:id` (mark one)
+- [x] `GET /api/dashboard/alerts` (+ `unread` count), `POST /api/dashboard/alerts` (scan), `PATCH /api/dashboard/alerts` (mark all), `PATCH /api/dashboard/alerts/:id` (mark one)
 - [x] `/dashboard/alerts` + `AlertBell` di Topbar (badge unread, poll 30s)
 - [x] Seed 30 alert dummy
 - [x] Tests: scanAlerts (5), alerts route (8), alerts [id] (3), AlertList (7), AlertBell (4), ForecastChart (4), DashboardLayout (1) — **total suite 153 test, coverage 97.88% lines / 90.36% functions**

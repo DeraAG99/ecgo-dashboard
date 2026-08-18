@@ -9,7 +9,7 @@ const cab = { id: "CB-001", code: "CB-001", branch: "Kemayoran" }
 function mockFetchSlots() {
   return vi.fn((input: RequestInfo | URL) => {
     const url = String(input)
-    if (url === "/api/cabinets") {
+    if (url === "/api/dashboard/cabinets") {
       return Promise.resolve({ ok: true, json: async () => ({ cabinets: [cab] }) })
     }
     return Promise.resolve({ ok: true, json: async () => ({ slots: [{ id: "slot-1", slotNumber: 3, state: "FAULT", soc: 0 }] }) })
@@ -35,7 +35,7 @@ describe("SlotMaintenanceTable", () => {
   it("should show empty state when no problem slots", async () => {
     globalThis.fetch = vi.fn((input: RequestInfo | URL) => {
       const url = String(input)
-      if (url === "/api/cabinets") {
+      if (url === "/api/dashboard/cabinets") {
         return Promise.resolve({ ok: true, json: async () => ({ cabinets: [cab] }) })
       }
       return Promise.resolve({ ok: true, json: async () => ({ slots: [{ id: "slot-1", slotNumber: 1, state: "FULL", soc: 100 }] }) })
@@ -60,10 +60,10 @@ describe("SlotMaintenanceTable", () => {
   it("should confirm action and update slot state", async () => {
     globalThis.fetch = vi.fn((input: RequestInfo | URL) => {
       const url = String(input)
-      if (url === "/api/cabinets") {
+      if (url === "/api/dashboard/cabinets") {
         return Promise.resolve({ ok: true, json: async () => ({ cabinets: [cab] }) })
       }
-      if (url.startsWith("/api/maintenance/slots/")) {
+      if (url.startsWith("/api/dashboard/maintenance/slots/")) {
         return Promise.resolve({ ok: true, json: async () => ({ newState: "EMPTY" }) })
       }
       return Promise.resolve({ ok: true, json: async () => ({ slots: [{ id: "slot-1", slotNumber: 3, state: "FAULT", soc: 0 }] }) })

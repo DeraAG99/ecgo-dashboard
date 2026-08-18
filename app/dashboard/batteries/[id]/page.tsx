@@ -54,7 +54,7 @@ export default function BatteryDetail() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(`/api/batteries/${id}`)
+      const response = await fetch(`/api/dashboard/batteries/${id}`)
       if (response.status === 404) {
         notFound()
         return

@@ -76,13 +76,13 @@ Zona waktu tunggal: **WIB (Asia/Jakarta)**.
 - Kolom waktu di DB memakai `timestamp` tanpa timezone, disimpan sebagai wall time WIB.
 - `docker-compose.yml` menyetel `TZ: Asia/Jakarta` (+ `PGTZ`) di service `postgres` dan `TZ: Asia/Jakarta` di service `dashboard`.
 - UI merender waktu via `formatJakarta()` dari `lib/time.ts` (eksplisit `timeZone: "Asia/Jakarta"`, bukan default browser).
-- Filter tanggal di `/api/transactions` + export diinterpretasikan sebagai **WIB** (helper `jakartaDayStart`/`jakartaDayEndExclusive`; `endDate` inclusive).
+- Filter tanggal di `/api/dashboard/transactions` + export diinterpretasikan sebagai **WIB** (helper `jakartaDayStart`/`jakartaDayEndExclusive`; `endDate` inclusive).
 - KPI "swap hari ini" & label grafik weekly pakai `jakartaTodayStart()`/`jakartaDateKey()` — tidak bergantung timezone host.
 - ⚠️ Perubahan TZ mengharuskan re-seed data (offset lama akan tergeser).
 
 ## API Endpoints
 
-### GET /api/cabinets
+### GET /api/dashboard/cabinets
 Daftar semua cabinet dengan filter & pagination.
 
 **Query Params:**
@@ -114,40 +114,40 @@ Daftar semua cabinet dengan filter & pagination.
 }
 ```
 
-### GET /api/cabinets/:id
+### GET /api/dashboard/cabinets/:id
 Detail cabinet dengan slot, transaksi, dan grafik.
 
-### GET /api/cabinets/map
+### GET /api/dashboard/cabinets/map
 Daftar cabinet ringkas untuk peta: `{ id, code, branch, status, lat, lng, radiusM, filledSlots, totalSlots }`. Dipakai halaman `/dashboard/map` (Leaflet).
 
-### GET /api/batteries
+### GET /api/dashboard/batteries
 Daftar baterai dengan filter & pagination.
 
 **Query Params:** `search` (kode/cabang), `status`, `minHealth`, `sortBy` (health, cycleCount, status), `sortOrder`, `page`, `limit`.
 
-### GET /api/batteries/:id
+### GET /api/dashboard/batteries/:id
 Detail baterai.
 
-### GET /api/forecast
+### GET /api/dashboard/forecast
 Proyeksi swap harian berdasarkan pola historis.
 
 **Query Params:** `branch` (kode cabinet; default semua), `days` (1–14, default 7).
 
 **Response:** `{ branch, days, totalActual, totalPredicted, avgPerDayActual, avgPerDayPredicted, peakHour, historicalDaily, forecastDaily, hourlyPattern, byCabinet }`. Prediksi dihitung dari profil rata-rata swap per `dow`+`hour` (window 60 hari) lalu di-scale ke rata-rata harian aktual; tanggal prediksi mulai besok (WIB).
 
-### GET /api/alerts
+### GET /api/dashboard/alerts
 Daftar alert/notifikasi. **Query Params:** `type`, `severity`, `read`, `page`, `limit`. Response `{ data, total, totalPages, unread }` (`unread` = jumlah alert belum dibaca).
 
-### POST /api/alerts
+### POST /api/dashboard/alerts
 Jalankan scan alert manual (`lib/alerts/scanAlerts.ts`) — deteksi CABINET_OFFLINE, SLOT_FAULT, BATTERY_LOW (health < 20), SWAP_ANOMALY (swap 24h > 2.5× rata-rata harian). Alert dibuat hanya jika belum ada alert tak-teratasi untuk kombinasi `type + entityId`. Response `{ scanned, created }`.
 
-### PATCH /api/alerts
+### PATCH /api/dashboard/alerts
 Tandai **semua** alert sebagai dibaca. Response `{ updated }`.
 
-### PATCH /api/alerts/:id
+### PATCH /api/dashboard/alerts/:id
 Tandai **satu** alert sebagai dibaca.
 
-### POST /api/checkins
+### POST /api/dashboard/checkins
 Check-in lokasi staf/user terhadap radius cabang (geofence). Body: `{ userId, lat, lng, accuracyM }`.
 
 Logika `lib/checkin/evaluateCheckin.ts`:
@@ -158,11 +158,11 @@ Logika `lib/checkin/evaluateCheckin.ts`:
 
 **Response:** `{ checkIn, result }` (201). Seluruh check-in disimpan ke tabel `checkins`.
 
-### GET /api/checkins
+### GET /api/dashboard/checkins
 Riwayat check-in dengan filter `userId`, `result` dan pagination `page`/`limit`.
 Response: `{ data, total, page, totalPages }`.
 
-### POST /api/swaps
+### POST /api/dashboard/swaps
 Eksekusi swap baterai, **di-gate ketat** oleh check-in:
 - `403` jika tidak ada check-in `VALID` dalam **15 menit** terakhir untuk user tsb
 - `403` jika cabang cabinet ≠ cabang lokasi check-in
@@ -188,8 +188,8 @@ Eksekusi swap baterai, **di-gate ketat** oleh check-in:
 
 ## Optimasi Kinerja (Anti N+1)
 
-- **`GET /api/cabinets`** dieksekusi dalam **satu query SQL**: CTE `filtered_cabinets` + `LEFT JOIN LATERAL` untuk `filledSlots` & `swapCount24h`, plus `COUNT(*) OVER()` untuk total. Tidak ada N+1 query per-cabinet.
-- **`GET /api/cabinets/:id`** chart data 24 jam di-agregasi di database (`GROUP BY` jam dari `swappedAt`), bukan fetch semua transaksi lalu dihitung di JavaScript.
+- **`GET /api/dashboard/cabinets`** dieksekusi dalam **satu query SQL**: CTE `filtered_cabinets` + `LEFT JOIN LATERAL` untuk `filledSlots` & `swapCount24h`, plus `COUNT(*) OVER()` untuk total. Tidak ada N+1 query per-cabinet.
+- **`GET /api/dashboard/cabinets/:id`** chart data 24 jam di-agregasi di database (`GROUP BY` jam dari `swappedAt`), bukan fetch semua transaksi lalu dihitung di JavaScript.
 - Filter, search, sort, dan offset pagination sepenuhnya di database.
 
 ## Struktur Data

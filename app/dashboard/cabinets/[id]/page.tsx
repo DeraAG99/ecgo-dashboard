@@ -38,7 +38,7 @@ export default function CabinetDetail() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(`/api/cabinets/${id}`)
+      const response = await fetch(`/api/dashboard/cabinets/${id}`)
       if (response.status === 404) {
         notFound()
         return

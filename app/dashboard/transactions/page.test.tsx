@@ -26,7 +26,7 @@ const cabinetOption = { id: "CB-001", code: "CB-001", branch: "Jakarta" }
 
 function mockFetch() {
   return vi.fn((url: string) => {
-    if (String(url).includes("/api/cabinets")) {
+    if (String(url).includes("/api/dashboard/cabinets")) {
       return Promise.resolve({
         ok: true,
         json: async () => ({ data: [cabinetOption], total: 1, totalPages: 1 }),

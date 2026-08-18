@@ -50,7 +50,7 @@ export default function CabinetMaintenanceTable() {
       if (statusFilter) params.set("status", statusFilter)
       params.set("page", String(page))
       params.set("limit", String(limit))
-      const res = await fetch(`/api/cabinets?${params.toString()}`)
+      const res = await fetch(`/api/dashboard/cabinets?${params.toString()}`)
       if (!res.ok) throw new Error("Gagal memuat cabinet")
       const data = await res.json()
       const rows = (data.cabinets ?? data.data ?? []).map((c: CabinetRow) => ({
@@ -80,7 +80,7 @@ export default function CabinetMaintenanceTable() {
     const action = `SET_${st}`
     setSubmitting(true)
     try {
-      const res = await fetch(`/api/maintenance/cabinets/${id}`, {
+      const res = await fetch(`/api/dashboard/maintenance/cabinets/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, reason: reasonVal }),

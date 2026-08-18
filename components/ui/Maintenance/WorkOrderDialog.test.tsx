@@ -49,7 +49,7 @@ describe("WorkOrderDialog", () => {
 
     await waitFor(() => {
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        "/api/maintenance/work-orders",
+        "/api/dashboard/maintenance/work-orders",
         expect.objectContaining({ method: "POST" })
       )
     })
@@ -59,7 +59,7 @@ describe("WorkOrderDialog", () => {
 
   it("should create a work order from alert", async () => {
     globalThis.fetch = vi.fn().mockImplementation((url: RequestInfo | URL) => {
-      if (String(url).includes("/api/alerts")) {
+      if (String(url).includes("/api/dashboard/alerts")) {
         return Promise.resolve({
           ok: true,
           json: async () => ({ data: [{ id: "al-1", title: "Cab offline", type: "CABINET_OFFLINE", severity: "WARNING" }] }),
@@ -79,7 +79,7 @@ describe("WorkOrderDialog", () => {
 
     await waitFor(() => {
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        "/api/maintenance/work-orders?source=alert",
+        "/api/dashboard/maintenance/work-orders?source=alert",
         expect.objectContaining({ method: "POST" })
       )
     })

@@ -70,7 +70,7 @@ describe("WorkOrderList", () => {
 
   it("should advance status via quick action button", async () => {
     globalThis.fetch = vi.fn((input: RequestInfo | URL) => {
-      if (String(input).includes("/api/maintenance/work-orders/wo-1")) {
+      if (String(input).includes("/api/dashboard/maintenance/work-orders/wo-1")) {
         return Promise.resolve({ ok: true, json: async () => ({}) })
       }
       return Promise.resolve({ ok: true, json: async () => ({ data: [{ ...woRow, status: "IN_PROGRESS" }], total: 1, totalPages: 1 }) })
@@ -84,7 +84,7 @@ describe("WorkOrderList", () => {
       expect(screen.getAllByText("Selesai").length).toBe(2)
     })
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      "/api/maintenance/work-orders/wo-1",
+      "/api/dashboard/maintenance/work-orders/wo-1",
       expect.objectContaining({ method: "PATCH" })
     )
   })

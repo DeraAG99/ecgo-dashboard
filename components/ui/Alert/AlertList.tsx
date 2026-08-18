@@ -60,7 +60,7 @@ function AlertListInner() {
       if (read) params.set("read", read)
       params.set("page", String(page))
       params.set("limit", String(limit))
-      const response = await fetch(`/api/alerts?${params.toString()}`)
+      const response = await fetch(`/api/dashboard/alerts?${params.toString()}`)
       if (!response.ok) throw new Error("Gagal memuat notifikasi")
       const data = await response.json()
       setAlerts(data.data)
@@ -81,7 +81,7 @@ function AlertListInner() {
   const handleScan = async () => {
     setScanning(true)
     try {
-      await fetch("/api/alerts", { method: "POST" })
+      await fetch("/api/dashboard/alerts", { method: "POST" })
       await fetchAlerts()
     } catch {
       setError("Gagal menjalankan scan")
@@ -91,13 +91,13 @@ function AlertListInner() {
   }
 
   const handleMarkRead = async (id: string) => {
-    await fetch(`/api/alerts/${id}`, { method: "PATCH" })
+    await fetch(`/api/dashboard/alerts/${id}`, { method: "PATCH" })
     setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, read: true } : a)))
     setUnread((u) => Math.max(0, u - 1))
   }
 
   const handleMarkAll = async () => {
-    await fetch("/api/alerts", { method: "PATCH" })
+    await fetch("/api/dashboard/alerts", { method: "PATCH" })
     setAlerts((prev) => prev.map((a) => ({ ...a, read: true })))
     setUnread(0)
   }

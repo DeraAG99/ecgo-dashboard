@@ -24,7 +24,7 @@ export default function AlertBell() {
 
     const fetchAlerts = async () => {
       try {
-        const response = await fetch("/api/alerts?limit=5&read=false")
+        const response = await fetch("/api/dashboard/alerts?limit=5&read=false")
         if (!response.ok) return
         const data = await response.json()
         if (!mounted) return
@@ -52,7 +52,7 @@ export default function AlertBell() {
   }, [])
 
   const handleMarkRead = async (id: string) => {
-    await fetch(`/api/alerts/${id}`, { method: "PATCH" })
+    await fetch(`/api/dashboard/alerts/${id}`, { method: "PATCH" })
     setRecent((prev) => prev.filter((a) => a.id !== id))
     setUnread((u) => Math.max(0, u - 1))
   }

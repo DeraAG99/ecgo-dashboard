@@ -19,36 +19,36 @@ Buat dashboard internal untuk tim operasional ECGO memantau cabinet battery swap
 
 app/
 ├── api/
-│   ├── cabinets/
-│   │   ├── route.ts               # GET list (filter, search, sort, pagination)
-│   │   ├── [id]/route.ts          # GET detail (slots, 20 transaksi, chart 24h)
-│   │   ├── map/route.ts           # GET data peta (lat/lng/radiusM/status)
-│   │   └── export/route.ts        # GET CSV export
-│   ├── batteries/
-│   │   ├── route.ts               # GET list baterai (filter, search, sort, pagination)
-│   │   └── [id]/route.ts          # GET detail baterai
-│   ├── checkins/
-│   │   └── route.ts               # POST check-in (evaluateCheckIn) + GET riwayat
-│   ├── swaps/
-│   │   └── route.ts               # POST swap (gate ketat oleh check-in VALID 15m)
-│   ├── alerts/
-│   │   ├── route.ts               # GET list (+unread) · POST scan · PATCH mark all read
-│   │   └── [id]/route.ts          # PATCH mark satu read
-│   ├── maintenance/
-│   │   ├── work-orders/
-│   │   │   ├── route.ts           # GET list (filter) · POST buat manual atau dari alert
-│   │   │   └── [id]/route.ts      # PATCH assign / selesaikan → INSERT maintenance_logs
-│   │   ├── cabinets/[id]/route.ts # PATCH SET_<STATUS> (ONLINE/OFFLINE/MAINTENANCE)
-│   │   ├── slots/[id]/route.ts    # PATCH RESET → EMPTY
-│   │   ├── batteries/[id]/route.ts# PATCH REACTIVATE → AVAILABLE · RETIRE → RETIRED
-│   │   ├── logs/route.ts          # GET riwayat maintenance (paginated)
-│   │   └── summary/route.ts       # GET KPI maintenance (openWO, inProgress, done7d, dsb)
-│   ├── forecast/route.ts          # GET proyeksi swap (branch?, days 1-14)
-│   ├── dashboard/route.ts         # GET KPI overview
-│   └── transactions/
-│       ├── route.ts               # GET list transaksi (filter, pagination)
-│       └── export/route.ts        # GET CSV export
-├── maintenance/page.tsx           # Halaman Maintenance (tabs: summary/work-orders/cabinets/slots/batteries/logs; page async + await searchParams)
+│   └── dashboard/
+│       ├── route.ts               # GET KPI overview
+│       ├── cabinets/
+│       │   ├── route.ts           # GET list (filter, search, sort, pagination)
+│       │   ├── [id]/route.ts      # GET detail (slots, 20 transaksi, chart 24h)
+│       │   ├── map/route.ts       # GET data peta (lat/lng/radiusM/status)
+│       │   └── export/route.ts    # GET CSV export
+│       ├── batteries/
+│       │   ├── route.ts           # GET list baterai (filter, search, sort, pagination)
+│       │   └── [id]/route.ts      # GET detail baterai
+│       ├── checkins/
+│       │   └── route.ts           # POST check-in (evaluateCheckIn) + GET riwayat
+│       ├── swaps/
+│       │   └── route.ts           # POST swap (gate ketat oleh check-in VALID 15m)
+│       ├── alerts/
+│       │   ├── route.ts           # GET list (+unread) · POST scan · PATCH mark all read
+│       │   └── [id]/route.ts      # PATCH mark satu read
+│       ├── maintenance/
+│       │   ├── work-orders/
+│       │   │   ├── route.ts       # GET list (filter) · POST buat manual atau dari alert
+│       │   │   └── [id]/route.ts  # PATCH assign / selesaikan → INSERT maintenance_logs
+│       │   ├── cabinets/[id]/route.ts # PATCH SET_<STATUS> (ONLINE/OFFLINE/MAINTENANCE)
+│       │   ├── slots/[id]/route.ts    # PATCH RESET → EMPTY
+│       │   ├── batteries/[id]/route.ts# PATCH REACTIVATE → AVAILABLE · RETIRE → RETIRED
+│       │   ├── logs/route.ts      # GET riwayat maintenance (paginated)
+│       │   └── summary/route.ts   # GET KPI maintenance (openWO, inProgress, done7d, dsb)
+│       ├── forecast/route.ts      # GET proyeksi swap (branch?, days 1-14)
+│       └── transactions/
+│           ├── route.ts           # GET list transaksi (filter, pagination)
+│           └── export/route.ts    # GET CSV export
 ├── dashboard/
 │   ├── page.tsx                   # Overview / KPI
 │   ├── map/page.tsx + layout.tsx  # Peta cabinet (Leaflet; metadata di layout.tsx karena page client; CabinetMap import "leaflet/dist/leaflet.css" + invalidateSize)
@@ -61,6 +61,7 @@ app/
 │   ├── alerts/page.tsx            # Notifikasi (AlertList)
 │   ├── forecast/page.tsx          # Perkiraan permintaan (ForecastChart)
 │   ├── checkins/page.tsx          # Demo check-in → swap (target cabinet, radius, riwayat)
+│   ├── maintenance/page.tsx      # Halaman Maintenance (tabs: summary/work-orders/cabinets/slots/batteries/logs)
 │   └── transactions/page.tsx      # Riwayat transaksi
 ├── page.tsx                       # Redirect ke /dashboard
 ├── layout.tsx + globals.css
@@ -121,7 +122,7 @@ phase.md
 ### Check-in Flow (Fitur tambahan)
 - `cabinets` punya kolom `lat`, `lng`, `radiusM` (target geofence).
 - Tabel `checkins`: riwayat hasil `evaluateCheckIn` (VALID/OUT_OF_RANGE/REJECTED).
-- `POST /api/swaps` **hanya jalan** bila ada check-in VALID ≤ 15 menit utk user tsb **dan** cabang cabinet = cabang check-in; lalu INSERT transaksi (`tx-...`, battery `BATT-XXXXXXXX`) + update slot `FULL→EMPTY`, `EMPTY→CHARGING`.
+- `POST /api/dashboard/swaps` **hanya jalan** bila ada check-in VALID ≤ 15 menit utk user tsb **dan** cabang cabinet = cabang check-in; lalu INSERT transaksi (`tx-...`, battery `BATT-XXXXXXXX`) + update slot `FULL→EMPTY`, `EMPTY→CHARGING`.
 - Note tipe: `lib/schema.ts` dan `lib/checkin/evaluateCheckin.ts` sama-sama mengekspor tipe `CheckIn` → alias saat import dua-duanya.
 
 ### Alerts (Fitur tambahan)
@@ -131,77 +132,77 @@ phase.md
 ### Maintenance (Fitur tambahan)
 - Tabel `work_orders`: `id, alert_id (FK alerts SET NULL), entity_type (CABINET/SLOT/BATTERY), entity_id, entity_label, title, description, priority (LOW/MEDIUM/HIGH), status (OPEN/IN_PROGRESS/DONE), assigned_to, notes, created_at, updated_at, completed_at`.
 - Tabel `maintenance_logs`: `id, entity_type, entity_id, entity_label, action, description, created_by, created_at`.
-- Alur: `PATCH /api/maintenance/work-orders/[id]` dengan `{ action: "ASSIGN", assignedTo }` / `{ action: "COMPLETE", notes }` → jika status jadi DONE, isi `completed_at`; setiap PATCH yang mengubah state → INSERT `maintenance_logs` via `lib/maintenance/log.ts`.
-- `POST /api/maintenance/work-orders` menerima `source: "manual"` (isi langsung) atau `source: "alert"` (dari `alertId` via `lib/maintenance/createFromAlert.ts`, tarik label via `entities.ts`).
+- Alur: `PATCH /api/dashboard/maintenance/work-orders/[id]` dengan `{ action: "ASSIGN", assignedTo }` / `{ action: "COMPLETE", notes }` → jika status jadi DONE, isi `completed_at`; setiap PATCH yang mengubah state → INSERT `maintenance_logs` via `lib/maintenance/log.ts`.
+- `POST /api/dashboard/maintenance/work-orders` menerima `source: "manual"` (isi langsung) atau `source: "alert"` (dari `alertId` via `lib/maintenance/createFromAlert.ts`, tarik label via `entities.ts`).
 
 ---
 
 ## 📡 API ENDPOINTS
 
-### GET /api/cabinets
+### GET /api/dashboard/cabinets
 Query params: `search`, `status`, `page`, `limit`, `sortBy`, `sortOrder`
 Response: `{ id, code, branch, status, filledSlots, totalSlots, swapCount24h, lastHeartbeat }[]` + pagination
 
-### GET /api/cabinets/:id
+### GET /api/dashboard/cabinets/:id
 Response: Cabinet detail with slots, 24h transactions, chart data
 
-### GET /api/cabinets/map
+### GET /api/dashboard/cabinets/map
 Response: `{ id, code, branch, status, lat, lng, radiusM, filledSlots, totalSlots }[]` (untuk Leaflet)
 
-### GET /api/batteries
+### GET /api/dashboard/batteries
 Query params: `search`, `status`, `minHealth`, `sortBy`, `sortOrder`, `page`, `limit`
 Response: `{ id, batteryCode, status, cycleCount, health, cabinetId, cabinetCode, branch, lastSwapAt }[]` + pagination
 
-### GET /api/batteries/:id
+### GET /api/dashboard/batteries/:id
 Response: Battery detail
 
-### GET /api/forecast
+### GET /api/dashboard/forecast
 Query params: `branch` (kode cabinet), `days` (1-14, default 7)
 Response: `{ branch, days, totalActual, totalPredicted, avgPerDayActual, avgPerDayPredicted, peakHour, historicalDaily, forecastDaily, hourlyPattern, byCabinet }`. Prediksi = profil rata-rata `dow`+`hour` (window 60 hari) di-scale rata-rata harian aktual; tanggal prediksi mulai besok WIB.
 
-### GET /api/alerts
+### GET /api/dashboard/alerts
 Query params: `type`, `severity`, `read`, `page`, `limit` → `{ data, total, totalPages, unread }`
 
-### POST /api/alerts
+### POST /api/dashboard/alerts
 Jalankan scan (`lib/alerts/scanAlerts.ts`) → `{ scanned, created }`
 
-### PATCH /api/alerts
+### PATCH /api/dashboard/alerts
 Mark **semua** read → `{ updated }`
 
-### PATCH /api/alerts/:id
+### PATCH /api/dashboard/alerts/:id
 Mark **satu** read
 
-### POST /api/checkins
+### POST /api/dashboard/checkins
 Body (Zod `checkInSchema`): `{ userId, lat, lng, accuracyM }` → panggil `evaluateCheckIn` → INSERT ke `checkins` → 201 `{ checkIn, result }`
 
-### GET /api/checkins
+### GET /api/dashboard/checkins
 Query params: `userId`, `result`, `page`, `limit` → riwayat paginated (LEFT JOIN cabinets utk info cabang)
 
-### POST /api/swaps
+### POST /api/dashboard/swaps
 Body (Zod `swapSchema`): `{ userId, cabinetId }`. Gate: check-in VALID ≤ 15m (`403`) → cabinet ada (`404`) → cabang cocok (`403`) → slot FULL≥1 & EMPTY≥1 (`409`) → sukses 201 `{ transaction, slotChanges }`
 
-### GET /api/maintenance/work-orders
+### GET /api/dashboard/maintenance/work-orders
 Query params: `status`, `page`, `limit` → `{ data, total, totalPages }` (urut updated_at desc)
 
-### POST /api/maintenance/work-orders
+### POST /api/dashboard/maintenance/work-orders
 Body (Zod `workOrderSchema`): `{ source: "manual" | "alert", title, description?, entityType?, entityId?, priority? }` atau `{ source: "alert", alertId }` → 201 `{ workOrder }`
 
-### PATCH /api/maintenance/work-orders/:id
+### PATCH /api/dashboard/maintenance/work-orders/:id
 Body: `{ action: "ASSIGN", assignedTo }` / `{ action: "COMPLETE", notes }` → update WO (DONE → isi `completed_at`) + INSERT `maintenance_logs`
 
-### PATCH /api/maintenance/cabinets/:id
+### PATCH /api/dashboard/maintenance/cabinets/:id
 Body: `{ action: "SET_ONLINE" | "SET_OFFLINE" | "SET_MAINTENANCE", reason? }` → update status + log
 
-### PATCH /api/maintenance/slots/:id
+### PATCH /api/dashboard/maintenance/slots/:id
 Body: `{ action: "RESET", reason? }` → slot `→ EMPTY` + log
 
-### PATCH /api/maintenance/batteries/:id
+### PATCH /api/dashboard/maintenance/batteries/:id
 Body: `{ action: "REACTIVATE" | "RETIRE", reason? }` → status → AVAILABLE/RETIRED + log
 
-### GET /api/maintenance/logs
+### GET /api/dashboard/maintenance/logs
 Query params: `page`, `limit` → `{ data, total, totalPages }`
 
-### GET /api/maintenance/summary
+### GET /api/dashboard/maintenance/summary
 → `{ openWO, inProgress, done7d, lowBattery, workOrderByPriority, recentLogs }`
 
 ---
@@ -249,7 +250,7 @@ bun run start
 - **Zona tunggal:** WIB (UTC+7). Semua kolom waktu di DB memakai `timestamp` tanpa timezone; data disimpan sebagai wall time WIB.
 - **docker-compose.yml** menyetel `TZ: Asia/Jakarta` (+ `PGTZ: Asia/Jakarta`) di service `postgres` dan `TZ: Asia/Jakarta` di service `dashboard`.
 - **UI** merender semua waktu via `formatJakarta()` dari `lib/time.ts` (paksa `timeZone: "Asia/Jakarta"` eksplisit, bukan default browser). Dipakai di: `CabinetTable.tsx`, `cabinets/[id]/page.tsx` (×2), `transactions/page.tsx`, `checkins/page.tsx`, `AlertList.tsx`, `AlertBell.tsx`.
-- **Filter tanggal** `/api/transactions` + export diinterpretasikan sebagai **WIB** (via `jakartaDayStart`/`jakartaDayEndExclusive`; `endDate` inclusive).
+- **Filter tanggal** `/api/dashboard/transactions` + export diinterpretasikan sebagai **WIB** (via `jakartaDayStart`/`jakartaDayEndExclusive`; `endDate` inclusive).
 - **KPI dashboard** "swap hari ini" pakai `jakartaTodayStart()` dan label `weeklyTrend` pakai `jakartaDateKey()` — tidak bergantung timezone host/server.
 - ⚠️ **Ganti TZ → wajib re-seed** (data lama akan tergeser offset). Saat deploy ulang setelah ubah TZ, hapus/seed ulang DB.
 

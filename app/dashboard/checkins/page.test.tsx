@@ -28,13 +28,13 @@ const historyRow = {
 
 function mockFetch() {
   return vi.fn((url: string, init?: RequestInit) => {
-    if (String(url).includes("/api/cabinets")) {
+    if (String(url).includes("/api/dashboard/cabinets")) {
       return Promise.resolve({
         ok: true,
         json: async () => ({ data: [cabinetOption], total: 1, totalPages: 1 }),
       })
     }
-    if (String(url).includes("/api/checkins")) {
+    if (String(url).includes("/api/dashboard/checkins")) {
       if (init?.method === "POST") {
         return Promise.resolve({
           ok: true,

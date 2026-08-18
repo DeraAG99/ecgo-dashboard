@@ -48,7 +48,7 @@ export default function BatteryMaintenanceTable() {
       if (statusFilter) params.set("status", statusFilter)
       params.set("page", String(page))
       params.set("limit", String(limit))
-      const res = await fetch(`/api/batteries?${params.toString()}`)
+      const res = await fetch(`/api/dashboard/batteries?${params.toString()}`)
       if (!res.ok) throw new Error("Gagal memuat baterai")
       const data = await res.json()
       const rows: BatteryRow[] = (data.batteries ?? data.data ?? []).map((b: BatteryRow) => ({
@@ -85,7 +85,7 @@ export default function BatteryMaintenanceTable() {
   const confirm = async (id: string, action: string, reasonVal: string) => {
     setSubmitting(true)
     try {
-      const res = await fetch(`/api/maintenance/batteries/${id}`, {
+      const res = await fetch(`/api/dashboard/maintenance/batteries/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, reason: reasonVal }),

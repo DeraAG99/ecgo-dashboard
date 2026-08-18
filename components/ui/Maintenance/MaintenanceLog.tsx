@@ -35,7 +35,7 @@ export default function MaintenanceLog() {
       const params = new URLSearchParams()
       params.set("page", String(page))
       params.set("limit", String(limit))
-      const res = await fetch(`/api/maintenance/logs?${params.toString()}`)
+      const res = await fetch(`/api/dashboard/maintenance/logs?${params.toString()}`)
       if (!res.ok) throw new Error("Gagal memuat log")
       const data = await res.json()
       setItems(data.data)

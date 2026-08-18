@@ -71,7 +71,7 @@ function TransactionsInner() {
   useEffect(() => {
     const loadCabinets = async () => {
       try {
-        const res = await fetch("/api/cabinets?limit=100")
+        const res = await fetch("/api/dashboard/cabinets?limit=100")
         if (!res.ok) throw new Error("Gagal memuat cabinet")
         const data = await res.json()
         setCabinets(data.data)
@@ -108,7 +108,7 @@ function TransactionsInner() {
         if (endDate) params.set("endDate", endDate)
         params.set("page", String(page))
         params.set("limit", String(limit))
-        const response = await fetch(`/api/transactions?${params.toString()}`)
+        const response = await fetch(`/api/dashboard/transactions?${params.toString()}`)
         if (!response.ok) throw new Error("Gagal memuat transaksi")
         const data = await response.json()
         setRows(data.data)
@@ -200,7 +200,7 @@ function TransactionsInner() {
           />
         </div>
         <a
-          href={`/api/transactions/export?search=${encodeURIComponent(search)}&cabinetId=${encodeURIComponent(cabinetId)}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`}
+          href={`/api/dashboard/transactions/export?search=${encodeURIComponent(search)}&cabinetId=${encodeURIComponent(cabinetId)}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`}
           className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-ecgo-green text-white rounded-lg text-body-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap h-[36px]"
         >
           <span className="material-symbols-outlined text-[18px]">download</span>

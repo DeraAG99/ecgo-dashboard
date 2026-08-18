@@ -43,7 +43,7 @@ export default function SlotMaintenanceTable() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch("/api/cabinets")
+      const res = await fetch("/api/dashboard/cabinets")
       if (!res.ok) throw new Error("Gagal memuat cabinet")
       const data = await res.json()
       const cabs: Array<{ id: string; code: string; branch: string }> = data.cabinets ?? data.data ?? []
@@ -51,7 +51,7 @@ export default function SlotMaintenanceTable() {
       const all: SlotRow[] = []
       await Promise.all(
         cabs.map(async (c) => {
-          const r = await fetch(`/api/cabinets/${c.id}`)
+          const r = await fetch(`/api/dashboard/cabinets/${c.id}`)
           if (!r.ok) return
           const d = await r.json()
           const slots: SlotRow[] = (d.slots ?? []).map((s: SlotRow) => ({
@@ -87,7 +87,7 @@ export default function SlotMaintenanceTable() {
   const confirm = async (id: string, action: string, reasonVal: string) => {
     setSubmitting(true)
     try {
-      const res = await fetch(`/api/maintenance/slots/${id}`, {
+      const res = await fetch(`/api/dashboard/maintenance/slots/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, reason: reasonVal }),

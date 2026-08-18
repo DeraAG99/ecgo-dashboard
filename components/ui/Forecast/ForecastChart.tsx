@@ -65,7 +65,7 @@ function ForecastInner() {
       const params = new URLSearchParams()
       if (branch) params.set("branch", branch)
       params.set("days", String(days))
-      const response = await fetch(`/api/forecast?${params.toString()}`)
+      const response = await fetch(`/api/dashboard/forecast?${params.toString()}`)
       if (!response.ok) throw new Error("Gagal memuat data forecast")
       setData(await response.json())
     } catch (err) {

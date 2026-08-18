@@ -69,7 +69,7 @@ function CabinetTableInner() {
       if (status) params.set("status", status)
       params.set("page", String(page))
       params.set("limit", String(limit))
-      const response = await fetch(`/api/cabinets?${params.toString()}`)
+      const response = await fetch(`/api/dashboard/cabinets?${params.toString()}`)
       if (!response.ok) throw new Error("Gagal memuat data cabinet")
       const data = await response.json()
       setCabinets(data.data)
@@ -138,7 +138,7 @@ function CabinetTableInner() {
             </span>
           </div>
           <a
-            href={`/api/cabinets/export?search=${encodeURIComponent(search)}&status=${status}`}
+            href={`/api/dashboard/cabinets/export?search=${encodeURIComponent(search)}&status=${status}`}
             className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-ecgo-green text-white rounded-lg text-body-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
           >
             <span className="material-symbols-outlined text-[18px]">download</span>

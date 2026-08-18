@@ -21,7 +21,7 @@ export default function MapPage() {
       try {
         setError(null)
         setLoading(true)
-        const res = await fetch("/api/cabinets/map")
+        const res = await fetch("/api/dashboard/cabinets/map")
         if (!res.ok) throw new Error("Gagal memuat peta cabinet")
         const json = await res.json()
         setData(json.data)

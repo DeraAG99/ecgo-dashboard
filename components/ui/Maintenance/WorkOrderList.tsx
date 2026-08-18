@@ -71,7 +71,7 @@ export default function WorkOrderList() {
       if (priority) params.set("priority", priority)
       params.set("page", String(page))
       params.set("limit", String(limit))
-      const res = await fetch(`/api/maintenance/work-orders?${params.toString()}`)
+      const res = await fetch(`/api/dashboard/maintenance/work-orders?${params.toString()}`)
       if (!res.ok) throw new Error("Gagal memuat work order")
       const data = await res.json()
       setItems(data.data)
@@ -115,7 +115,7 @@ export default function WorkOrderList() {
       setDialogOpen(true)
       return
     }
-    await fetch(`/api/maintenance/work-orders/${wo.id}`, {
+    await fetch(`/api/dashboard/maintenance/work-orders/${wo.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -126,7 +126,7 @@ export default function WorkOrderList() {
   }
 
   const assignWo = async (woId: string, assignedToVal: string) => {
-    await fetch(`/api/maintenance/work-orders/${woId}`, {
+    await fetch(`/api/dashboard/maintenance/work-orders/${woId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "ASSIGNED", assignedTo: assignedToVal }),

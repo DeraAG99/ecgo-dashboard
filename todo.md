@@ -16,8 +16,8 @@
 - [x] Seeding data (50 cabinets, 600 slots, 20k transaksi)
 
 ## Phase 3: API Routes ✅
-- [x] GET /api/cabinets (list with filter, search, sort, pagination)
-- [x] GET /api/cabinets/[id] (detail with slots, transactions, chart)
+- [x] GET /api/dashboard/cabinets (list with filter, search, sort, pagination)
+- [x] GET /api/dashboard/cabinets/[id] (detail with slots, transactions, chart)
 - [x] Zod validation untuk semua endpoint
 - [x] Error handling standar
 
@@ -71,16 +71,16 @@
 - [x] MIGRATION FIX: Inline timezone `'Asia/Jakarta'` as SQL literal (not parameter) in `lib/time-sql.ts` to fix GROUP BY parameter mismatch after timestamp→timestamptz migration
   - Root cause: Each call to `wibDateKey()` created separate SQL with different parameter indices ($1 vs $3)
   - Fix: Use raw SQL literal `'Asia/Jakarta'` instead of parameter → identical expressions in SELECT & GROUP BY
-- [x] Fix `/api/dashboard` 500 error (error: "column must appear in GROUP BY")
-- [x] Fix `/api/cabinets/[id]` GROUP BY parameter mismatch for `wibHour`
-- [x] Fix `/api/forecast` GROUP BY parameter mismatch for `wibDayTrunc`, `wibDow`, `wibHour`
+- [x] Fix `/api/dashboard/dashboard` 500 error (error: "column must appear in GROUP BY")
+- [x] Fix `/api/dashboard/cabinets/[id]` GROUP BY parameter mismatch for `wibHour`
+- [x] Fix `/api/dashboard/forecast` GROUP BY parameter mismatch for `wibDayTrunc`, `wibDow`, `wibHour`
 - [x] Update tests in `lib/time-sql.test.ts` to expect inline timezone literals (no params)
 - [x] Verify all API endpoints work correctly
 
 ---
 
 ## Phase 9: Transactions Filter ✅
-- [x] Filter rentang tanggal (startDate/endDate) di API GET /api/transactions + export + validation (inclusive endDate)
+- [x] Filter rentang tanggal (startDate/endDate) di API GET /api/dashboard/transactions + export + validation (inclusive endDate)
 - [x] Dropdown cabinet/cabang (param cabinetId) di halaman transactions — API sudah support, tinggal UI
 - [x] Select status diperluas (Semua/Sukses/Gagal) — placeholder jaga-jaga (tabel belum punya kolom status)
 - [x] Reset halaman ke 1 saat filter berubah
@@ -91,8 +91,8 @@
 ## Phase 10: Check-in & Swap Flow ✅
 - [x] Schema: cabinets + `lat`/`lng`/`radiusM`, tabel `checkins` + enum `check_in_result`/`check_in_reason` (migration 0001)
 - [x] Seed: 50 cabinets + koordinat/radius, 20 riwayat check-in dummy (campuran VALID/OUT_OF_RANGE/REJECTED)
-- [x] POST /api/checkins (evaluateCheckIn → INSERT checkins) + GET /api/checkins (riwayat paginated)
-- [x] POST /api/swaps (gate ketat: check-in VALID ≤ 15m, cabang cocok, slot FULL/EMPTY → INSERT tx + update slot)
+- [x] POST /api/dashboard/checkins (evaluateCheckIn → INSERT checkins) + GET /api/dashboard/checkins (riwayat paginated)
+- [x] POST /api/dashboard/swaps (gate ketat: check-in VALID ≤ 15m, cabang cocok, slot FULL/EMPTY → INSERT tx + update slot)
 - [x] Halaman /dashboard/checkins (demo: pilih cabinet target → prefill lat/lng → jarak real-time haversine → check-in → swap)
 - [x] Menu Sidebar "Check-in"
 - [x] Tests: routes checkins/swaps (6 skenario gate) + page (82 total test)
@@ -105,14 +105,14 @@
 - [x] Helper `lib/time.ts` + test (jakartaDayStart/jakartaDayEndExclusive/jakartaDateKey/jakartaTodayStart/formatJakarta)
 - [x] docker-compose: `TZ: Asia/Jakarta` (+ PGTZ) di postgres, `TZ: Asia/Jakarta` di dashboard
 - [x] UI eksplisit WIB via `formatJakarta()` di 5 titik (CabinetTable, detail cabinet ×2, transactions, checkins)
-- [x] Filter tanggal `/api/transactions` + export diinterpretasikan WIB (endDate inclusive)
+- [x] Filter tanggal `/api/dashboard/transactions` + export diinterpretasikan WIB (endDate inclusive)
 - [x] KPI dashboard `jakartaTodayStart()` + label weeklyTrend WIB
 - [x] Recreate container postgres (timezone Asia/Jakarta) + re-seed; verifikasi (92 total test)
 
 ---
 
 ## Phase 13: Map View ✅
-- [x] GET /api/cabinets/map (data lat/lng/radiusM/status untuk peta)
+- [x] GET /api/dashboard/cabinets/map (data lat/lng/radiusM/status untuk peta)
 - [x] components/ui/Cabinet/CabinetMap.tsx (Leaflet, marker per status, circle geofence, popup info)
 - [x] Halaman /dashboard/map (auto-refresh 30s, dynamic import ssr:false)
 - [x] Menu Sidebar "Peta" + Topbar title
@@ -124,7 +124,7 @@
 ## Phase 14: Battery Management ✅
 - [x] Schema tabel `batteries` + enum `battery_status` (migration 0002)
 - [x] Seed 1000 baterai (status, cycleCount, health, cabinet assignment)
-- [x] GET /api/batteries (filter status/search/health, sort, pagination) + GET /api/batteries/[id]
+- [x] GET /api/dashboard/batteries (filter status/search/health, sort, pagination) + GET /api/dashboard/batteries/[id]
 - [x] Halaman /dashboard/batteries + detail [id]; link kode baterai di riwayat transaksi
 - [x] Riwayat swap di detail baterai tampilkan lokasi: `{branch} ({cabinetCode})` (API sudah return branch)
 - [x] Tests: route batteries + detail (8) + halaman (8)
@@ -132,7 +132,7 @@
 ---
 
 ## Phase 15: Demand Forecasting ✅
-- [x] GET /api/forecast (`branch?`, `days` 1-14, default 7) — profil per jam (dow+hour, window 60 hari), prediksi harian WIB, rata-rata per cabinet
+- [x] GET /api/dashboard/forecast (`branch?`, `days` 1-14, default 7) — profil per jam (dow+hour, window 60 hari), prediksi harian WIB, rata-rata per cabinet
 - [x] Halaman /dashboard/forecast + ForecastChart (Recharts: bar aktual vs prediksi, line pola per jam, KPI cards, tabel per cabinet)
 - [x] Menu Sidebar "Forecast" + Topbar title
 - [x] Tests route forecast (4) + ForecastChart (4)
@@ -143,7 +143,7 @@
 ## Phase 16: Alert & Notifications ✅
 - [x] Schema tabel `alerts` + enum `alert_type`/`alert_severity` + index (migration 0003)
 - [x] lib/alerts/scanAlerts.ts — deteksi 4 tipe (CABINET_OFFLINE, SLOT_FAULT, BATTERY_LOW, SWAP_ANOMALY) + dedupe alert unresolved
-- [x] GET /api/alerts (list, filter, unread count), POST /api/alerts (scan), PATCH /api/alerts (mark all read), PATCH /api/alerts/[id] (mark satu read)
+- [x] GET /api/dashboard/alerts (list, filter, unread count), POST /api/dashboard/alerts (scan), PATCH /api/dashboard/alerts (mark all read), PATCH /api/dashboard/alerts/[id] (mark satu read)
 - [x] Halaman /dashboard/alerts (filter severity/type, daftar, tombol scan & tandai dibaca)
 - [x] AlertBell di Topbar (badge unread + dropdown, poll 30s)
 - [x] Menu Sidebar "Notifications" + Topbar title
@@ -155,7 +155,7 @@
 ## Phase 17: Maintenance ✅
 - [x] Schema tabel `work_orders` (13 kolom, FK alert_id → alerts.id SET NULL) + `maintenance_logs` (7 kolom) (migration 0004)
 - [x] Seed work orders dari alert/status + maintenance log awal
-- [x] API: GET/POST /api/maintenance/work-orders, GET/PATCH /api/maintenance/work-orders/[id] (assign, selesaikan, catat log), PATCH /api/maintenance/cabinets/[id], PATCH /api/maintenance/slots/[id], PATCH /api/maintenance/batteries/[id], GET /api/maintenance/logs, GET /api/maintenance/summary
+- [x] API: GET/POST /api/dashboard/maintenance/work-orders, GET/PATCH /api/dashboard/maintenance/work-orders/[id] (assign, selesaikan, catat log), PATCH /api/dashboard/maintenance/cabinets/[id], PATCH /api/dashboard/maintenance/slots/[id], PATCH /api/dashboard/maintenance/batteries/[id], GET /api/dashboard/maintenance/logs, GET /api/dashboard/maintenance/summary
 - [x] lib/maintenance: createWorkOrderFromAlert, resolveEntityForLog, addMaintenanceLog, mapAlertPriority
 - [x] Halaman /dashboard/maintenance (tabs: summary, work-orders, cabinets, slots, batteries, logs) + komponen UI per domain + WorkOrderDialog
 - [x] Menu Sidebar "Maintenance" + Topbar title

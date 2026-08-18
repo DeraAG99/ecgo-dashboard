@@ -88,7 +88,7 @@ export default function CheckInsPage() {
 
   const loadCabinets = useCallback(async () => {
     try {
-      const res = await fetch("/api/cabinets?limit=100")
+      const res = await fetch("/api/dashboard/cabinets?limit=100")
       if (!res.ok) throw new Error("Gagal memuat cabinet")
       const data = await res.json()
       setCabinets(data.data)
@@ -99,7 +99,7 @@ export default function CheckInsPage() {
 
   const loadHistory = useCallback(async () => {
     try {
-      const res = await fetch("/api/checkins?limit=20")
+      const res = await fetch("/api/dashboard/checkins?limit=20")
       if (!res.ok) throw new Error("Gagal memuat riwayat check-in")
       const data = await res.json()
       setHistory(data.data)
@@ -150,7 +150,7 @@ export default function CheckInsPage() {
     setResult(null)
     setSwapResult(null)
     try {
-      const res = await fetch("/api/checkins", {
+      const res = await fetch("/api/dashboard/checkins", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -180,7 +180,7 @@ export default function CheckInsPage() {
     setSwapError(null)
     setSwapResult(null)
     try {
-      const res = await fetch("/api/swaps", {
+      const res = await fetch("/api/dashboard/swaps", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: userId.trim(), cabinetId: targetId }),

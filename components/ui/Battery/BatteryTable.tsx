@@ -76,7 +76,7 @@ function BatteryTableInner() {
       if (status) params.set("status", status)
       params.set("page", String(page))
       params.set("limit", String(limit))
-      const response = await fetch(`/api/batteries?${params.toString()}`)
+      const response = await fetch(`/api/dashboard/batteries?${params.toString()}`)
       if (!response.ok) throw new Error("Gagal memuat data baterai")
       const data = await response.json()
       setBatteries(data.data)

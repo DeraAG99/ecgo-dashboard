@@ -52,7 +52,7 @@ export default function MaintenanceSummary() {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch("/api/maintenance/summary")
+        const res = await fetch("/api/dashboard/maintenance/summary")
         if (!res.ok) throw new Error("Gagal memuat ringkasan")
         setData(await res.json())
       } catch (err) {

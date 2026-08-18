@@ -49,7 +49,7 @@ export function WorkOrderDialog({
 
   useEffect(() => {
     if (open && source === "alert") {
-      fetch("/api/alerts?read=false&limit=100")
+      fetch("/api/dashboard/alerts?read=false&limit=100")
         .then((r) => r.json())
         .then((d) => setAlerts(d.data ?? []))
     }
@@ -72,20 +72,20 @@ export function WorkOrderDialog({
     setSaving(true)
     try {
       if (isEdit && value) {
-        await fetch(`/api/maintenance/work-orders/${value.id}`, {
+        await fetch(`/api/dashboard/maintenance/work-orders/${value.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ notes, status: value.status, title, priority }),
         })
       } else if (source === "alert" && alertId) {
-        await fetch(`/api/maintenance/work-orders?source=alert`, {
+        await fetch(`/api/dashboard/maintenance/work-orders?source=alert`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ alertId }),
         })
         setSource("manual")
       } else {
-        await fetch(`/api/maintenance/work-orders`, {
+        await fetch(`/api/dashboard/maintenance/work-orders`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

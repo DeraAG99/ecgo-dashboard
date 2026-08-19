@@ -6,7 +6,7 @@ import Link from "next/link"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
 import AlertSeverityBadge from "./AlertSeverityBadge"
-import { formatJakarta } from "@/lib/time"
+import { formatWIB } from "@/lib/time"
 
 interface AlertRow {
   id: string
@@ -222,7 +222,7 @@ function AlertListInner() {
                   </div>
                   <p className="text-[12px] text-on-surface-variant mt-1">{a.message}</p>
                   <span className="font-mono text-[10px] text-outline mt-2 block">
-                    {a.createdAt ? formatJakarta(a.createdAt) : ""}
+                    {a.createdAt ? formatWIB(a.createdAt) : ""}
                   </span>
                 </div>
                 {!a.read && (

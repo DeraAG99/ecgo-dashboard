@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
-import { formatJakarta } from "@/lib/time"
+import { formatWIB } from "@/lib/time"
 
 interface BatteryRow {
   id: string
@@ -157,7 +157,7 @@ export default function BatteryMaintenanceTable() {
                   <Td className="text-on-surface-variant font-mono">{b.health}%</Td>
                   <Td className="text-on-surface-variant">{b.cycleCount}</Td>
                   <Td className="text-on-surface-variant">{b.cabinetCode ?? b.branch ?? "-"}</Td>
-                  <Td className="text-on-surface-variant font-mono text-xs">{formatJakarta(b.lastSwapAt)}</Td>
+                  <Td className="text-on-surface-variant font-mono text-xs">{formatWIB(b.lastSwapAt)}</Td>
                   <Td>
                     <select
                       onChange={(e) => setTarget({ id: b.id, action: e.target.value })}

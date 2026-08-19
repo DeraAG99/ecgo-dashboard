@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { formatJakarta } from "@/lib/time"
+import { formatWIB } from "@/lib/time"
 
 interface AlertRow {
   id: string
@@ -90,7 +90,7 @@ export default function AlertBell() {
                   <div className="flex-1 min-w-0">
                     <p className="text-[12px] font-medium text-on-surface truncate">{a.title}</p>
                     <span className="font-mono text-[10px] text-on-surface-variant">
-                      {a.createdAt ? formatJakarta(a.createdAt) : ""}
+                      {a.createdAt ? formatWIB(a.createdAt) : ""}
                     </span>
                   </div>
                   <button

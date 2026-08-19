@@ -1,7 +1,7 @@
 # Development Phases - ECGO Battery Swap Dashboard
 
-> **Status (updated 16 Aug 2026):** Fase 1-5 ✅ selesai. Fase 6 ⏳ pending (deploy VM: staging + production). Fitur tambahan (Map, Battery, Forecast, Alert) ✅ selesai & terverifikasi.
-> **Keputusan penting:** Dev memakai PostgreSQL lokal `localhost:5432` (`postgres/password`); postgres Docker (host 5432) dikhususkan untuk deploy VM dan juga dipakai untuk verifikasi live (saat Postgres lokal di-stop). API anti-N+1 memakai single SQL query; skema validasi Zod terpusat di `lib/validation.ts`. Package manager: **Bun** (`bun.lock`); DB migration-driven via `drizzle/migrations` + `db:migrate`.
+> **Status (updated 19 Aug 2026):** Fase 1-7 ✅ selesai. Fitur tambahan (Map, Battery, Forecast, Alert, Maintenance) ✅ selesai & terverifikasi. Fase 19 ✅ lib folder restructuring. Deploy langsung ke production VM.
+> **Keputusan penting:** Dev memakai PostgreSQL lokal `localhost:5432` (`postgres/password`); postgres Docker (host 5432) dikhususkan untuk deploy VM dan juga dipakai untuk verifikasi live (saat Postgres lokal di-stop). API anti-N+1 memakai single SQL query; skema validasi Zod terpusat di `lib/validation/`. Package manager: **Bun** (`bun.lock`); DB migration-driven via `drizzle/migrations` + `db:migrate`.
 
 ## Fase 1: Foundation (Hari 1-2)
 
@@ -32,8 +32,8 @@ Setup infrastruktur dasar project Next.js dengan konfigurasi yang benar.
 Buat schema database, migrasi, dan seeding data.
 
 ### Tasks
-- [x] Hubungkan database di `lib/db.ts`
-- [x] Definisikan schema di `lib/schema.ts`
+- [x] Hubungkan database di `lib/db/index.ts`
+- [x] Definisikan schema di `lib/db/schema.ts`
   - `cabinets` table
   - `slots` table
   - `transactions` table
@@ -68,7 +68,7 @@ Buat REST API untuk frontend consumenya.
   - Daftar slots (ORDER BY slotNumber)
   - 20 transaksi terakhir
   - Chart data 24 jam (di-agregasi di database, GROUP BY jam)
-- [x] Validasi input dengan Zod (skema terpusat di `lib/validation.ts`)
+- [x] Validasi input dengan Zod (skema terpusat di `lib/validation/index.ts`)
 - [x] Error handling yang konsisten
 - [ ] Rate limiting (opsional)
 
@@ -120,7 +120,7 @@ Pastikan semua komponen dan API berfungsi dengan baik.
 
 ### Tasks
 - [x] Setup Vitest
-- [x] Tulis unit tests untuk utils (62 tests: `lib/validation.test.ts`, `lib/checkin/evaluateCheckin.test.ts`)
+- [x] Tulis unit tests untuk utils (82 tests: `lib/validation/schemas.test.ts`, `lib/checkin/evaluateCheckin.test.ts`)
 - [x] Tulis unit tests untuk API routes (mock `@/lib/db`)
 - [x] Tulis component tests (StatusBadge, CabinetTable, Sidebar, Topbar)
 - [x] Jalankan `bun run lint`
@@ -145,9 +145,7 @@ Deploy ke lingkungan production.
 ### Tasks
 - [x] Setup Docker production image (Dockerfile ada, `docker compose build` berhasil)
 - [x] Update workflow deployment di GitHub Actions
-- [ ] Deploy ke staging server
-- [ ] Uji di staging
-- [ ] Deploy ke production
+- [x] Deploy ke production VM via Cloudflare Tunnel
 
 ### Deliverables
 - Aplikasi running di production
@@ -188,6 +186,31 @@ Deploy ke lingkungan production.
 
 ---
 
+## Fase 19: Lib Folder Restructuring ✅
+
+### Tujuan
+Restructure `lib/` folder agar lebih rapi: grouped by concern, barrel exports, rename `jakarta*` → `wib*`.
+
+### Tasks
+- [x] Create `lib/time/` folder: group `time.ts` + `time-sql.ts` → `wib.ts` + `wib.sql.ts` + `index.ts`
+- [x] Rename functions: `jakartaDayStart` → `wibStartOfDay`, `jakartaDayEndExclusive` → `wibEndOfDayExclusive`, `jakartaDateKey` → `wibDateKey`, `jakartaTodayStart` → `wibTodayStart`, `formatJakarta` → `formatWIB`
+- [x] Bug fix: `wibStartOfDay`/`wibEndOfDayExclusive` sekarang benar untuk Date apapun (sebelumnya hanya benar jika input UTC midnight)
+- [x] Create `lib/db/` folder: group `db.ts` → `db/index.ts` + `db/schema.ts`
+- [x] Backward-compat re-export: `lib/schema.ts` → `export * from './db/schema'`
+- [x] Create `lib/validation/` folder: group `validation.ts` → `validation/index.ts` + `validation/schemas.test.ts`
+- [x] Add barrel `index.ts` to `lib/alerts/`, `lib/checkin/`, `lib/maintenance/`
+- [x] Update all 18+ callers (4 API routes + 13 UI components + 1 time-sql import)
+- [x] Delete old loose files from `lib/` root
+- [x] Update tests (`wib.test.ts`, `wib.sql.test.ts`)
+- [x] Verify: 219 tests pass, typecheck clean, lint clean
+
+### Deliverables
+- Clean `lib/` structure with folders for each concern
+- Zero breaking changes (backward-compat re-exports)
+- Bug fix for `wibStartOfDay`/`wibEndOfDayExclusive`
+
+---
+
 ## Estimasi Waktu
 
 | Fase | Hari | total |
@@ -209,4 +232,4 @@ Deploy ke lingkungan production.
 - [x] **Milestone 2 (Hari 7):** API Endpoints READY
 - [x] **Milestone 3 (Hari 10):** UI Components READY
 - [x] **Milestone 4 (Hari 12):** Testing READY
-- [ ] **Milestone 5 (Hari 14):** Deployment LIVE
+- [x] **Milestone 5 (Hari 14):** Deployment LIVE

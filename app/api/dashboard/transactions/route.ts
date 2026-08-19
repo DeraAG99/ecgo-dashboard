@@ -4,7 +4,7 @@ import { transactions, cabinets } from "@/lib/schema"
 import { transactionsQuerySchema } from "@/lib/validation"
 import { z } from "zod"
 import { sql, desc, eq, and, gte, lt } from "drizzle-orm"
-import { jakartaDayStart, jakartaDayEndExclusive } from "@/lib/time"
+import { wibStartOfDay, wibEndOfDayExclusive } from "@/lib/time"
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,10 +25,10 @@ export async function GET(req: NextRequest) {
       conditions.push(eq(transactions.cabinetId, cabinetId))
     }
     if (startDate) {
-      conditions.push(gte(transactions.swappedAt, jakartaDayStart(startDate)))
+      conditions.push(gte(transactions.swappedAt, wibStartOfDay(startDate)))
     }
     if (endDate) {
-      conditions.push(lt(transactions.swappedAt, jakartaDayEndExclusive(endDate)))
+      conditions.push(lt(transactions.swappedAt, wibEndOfDayExclusive(endDate)))
     }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined

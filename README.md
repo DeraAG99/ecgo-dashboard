@@ -73,11 +73,11 @@ docker compose --env-file .env.prod up -d
 
 Zona waktu tunggal: **WIB (Asia/Jakarta)**.
 
-- Kolom waktu di DB memakai `timestamp` tanpa timezone, disimpan sebagai wall time WIB.
+- Kolom waktu di DB memakai `timestamptz`, disimpan sebagai UTC, dikonversi ke WIB saat query/display.
 - `docker-compose.yml` menyetel `TZ: Asia/Jakarta` (+ `PGTZ`) di service `postgres` dan `TZ: Asia/Jakarta` di service `dashboard`.
-- UI merender waktu via `formatJakarta()` dari `lib/time.ts` (eksplisit `timeZone: "Asia/Jakarta"`, bukan default browser).
-- Filter tanggal di `/api/dashboard/transactions` + export diinterpretasikan sebagai **WIB** (helper `jakartaDayStart`/`jakartaDayEndExclusive`; `endDate` inclusive).
-- KPI "swap hari ini" & label grafik weekly pakai `jakartaTodayStart()`/`jakartaDateKey()` — tidak bergantung timezone host.
+- UI merender waktu via `formatWIB()` dari `lib/time/wib.ts` (eksplisit `timeZone: "Asia/Jakarta"`, bukan default browser).
+- Filter tanggal di `/api/dashboard/transactions` + export diinterpretasikan sebagai **WIB** (helper `wibStartOfDay`/`wibEndOfDayExclusive`; `endDate` inclusive).
+- KPI "swap hari ini" & label grafik weekly pakai `wibTodayStart()`/`wibDateKey()` — tidak bergantung timezone host.
 - ⚠️ Perubahan TZ mengharuskan re-seed data (offset lama akan tergeser).
 
 ## API Endpoints

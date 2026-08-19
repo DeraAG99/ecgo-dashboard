@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { cabinetsQuerySchema, cabinetParamsSchema, transactionsQuerySchema } from "./validation"
+import { cabinetsQuerySchema, cabinetParamsSchema, transactionsQuerySchema } from "./index"
 
 describe("cabinetsQuerySchema", () => {
   it("should parse default parameters", () => {

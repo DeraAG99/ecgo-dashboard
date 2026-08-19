@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
 import { haversine } from "@/lib/checkin/evaluateCheckin"
-import { formatJakarta } from "@/lib/time"
+import { formatWIB } from "@/lib/time"
 
 interface CabinetOption {
   id: string
@@ -455,7 +455,7 @@ export default function CheckInsPage() {
                 {history.map((ci) => (
                   <tr key={ci.id} className="border-b border-outline-variant/20">
                     <td className="py-3 px-4 text-on-surface-variant">
-                      {formatJakarta(ci.createdAt)}
+                      {formatWIB(ci.createdAt)}
                     </td>
                     <td className="py-3 px-4">{ci.userId}</td>
                     <td className="py-3 px-4">

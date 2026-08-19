@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
-import { formatJakarta } from "@/lib/time"
+import { formatWIB } from "@/lib/time"
 import { WorkOrderDialog } from "./WorkOrderDialog"
 
 interface WoRow {
@@ -221,7 +221,7 @@ export default function WorkOrderList() {
                     </Td>
                     <Td>{STATUS_LABEL[wo.status] ?? wo.status}</Td>
                     <Td className="text-on-surface-variant">{wo.assignedTo ?? "-"}</Td>
-                    <Td className="text-on-surface-variant font-mono text-xs">{formatJakarta(wo.createdAt)}</Td>
+                    <Td className="text-on-surface-variant font-mono text-xs">{formatWIB(wo.createdAt)}</Td>
                     <Td>
                       <div className="flex items-center gap-1">
                         {ns && (

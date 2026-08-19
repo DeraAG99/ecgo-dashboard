@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
-import { formatJakarta } from "@/lib/time"
+import { formatWIB } from "@/lib/time"
 
 interface TransactionRow {
   id: string
@@ -234,7 +234,7 @@ function TransactionsInner() {
                   <tr key={tx.id} className="hover:bg-surface transition-colors">
                     <td className="py-4 px-6 font-mono text-xs">{tx.id.slice(0, 12)}</td>
                     <td className="py-4 px-6 text-on-surface-variant whitespace-nowrap">
-                      {tx.swappedAt ? formatJakarta(tx.swappedAt) : "-"}
+                      {tx.swappedAt ? formatWIB(tx.swappedAt) : "-"}
                     </td>
                     <td className="py-4 px-6 font-mono">{tx.userId}</td>
                     <td className="py-4 px-6">

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { transactions, cabinets } from "@/lib/schema"
 import { sql, desc, eq, and, gte, lt } from "drizzle-orm"
-import { jakartaDayStart, jakartaDayEndExclusive } from "@/lib/time"
+import { wibStartOfDay, wibEndOfDayExclusive } from "@/lib/time"
 
 const CSV_HEADER = "id,cabinetCode,branch,userId,oldBatteryId,newBatteryId,swappedAt"
 const EXPORT_LIMIT = 1000
@@ -34,10 +34,10 @@ export async function GET(req: NextRequest) {
       conditions.push(eq(transactions.cabinetId, cabinetId))
     }
     if (startDateValid) {
-      conditions.push(gte(transactions.swappedAt, jakartaDayStart(startDate!)))
+      conditions.push(gte(transactions.swappedAt, wibStartOfDay(startDate!)))
     }
     if (endDate) {
-      conditions.push(lt(transactions.swappedAt, jakartaDayEndExclusive(endDate)))
+      conditions.push(lt(transactions.swappedAt, wibEndOfDayExclusive(endDate)))
     }
     const where = conditions.length > 0 ? and(...conditions) : undefined
 

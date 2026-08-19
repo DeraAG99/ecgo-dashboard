@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
-import { formatJakarta } from "@/lib/time"
+import { formatWIB } from "@/lib/time"
 
 interface LogRow {
   id: string
@@ -86,7 +86,7 @@ export default function MaintenanceLog() {
                   <Td className="text-on-surface-variant">{l.entityType}</Td>
                   <Td className="text-on-surface-variant">{l.entityLabel ?? "-"}</Td>
                   <Td className="text-on-surface-variant text-xs">{l.detail ?? "-"}</Td>
-                  <Td className="text-on-surface-variant font-mono text-xs">{formatJakarta(l.createdAt)}</Td>
+                  <Td className="text-on-surface-variant font-mono text-xs">{formatWIB(l.createdAt)}</Td>
                 </tr>
               ))
             )}

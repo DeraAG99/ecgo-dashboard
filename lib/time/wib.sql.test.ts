@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest"
 import { sql, type SQL } from "drizzle-orm"
 import { PgDialect } from "drizzle-orm/pg-core/dialect"
 import { CasingCache } from "drizzle-orm/casing"
-import { wibDateKey, wibHour, wibDow, wibDayTrunc, wibNowDayStart } from "./time-sql"
+import { wibDateKey, wibHour, wibDow, wibDayTrunc, wibNowDayStart } from "./wib.sql"
 
 const dialect = new PgDialect()
 const casing = new CasingCache(undefined)
@@ -20,7 +20,7 @@ function countAtTimeZone(sqlText: string): number {
   return sqlText.split("AT TIME ZONE").length - 1
 }
 
-describe("lib/time-sql (WIB conversion)", () => {
+describe("lib/time/wib.sql (WIB conversion)", () => {
   it("should apply exactly one WIB conversion per bucketing helper", () => {
     const cases: Array<[string, SQL, string]> = [
       ["wibDateKey", wibDateKey(sql`t.swapped_at`), "TO_CHAR(t.swapped_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD')"],

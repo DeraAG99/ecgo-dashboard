@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
-import { formatJakarta } from "@/lib/time"
+import { formatWIB } from "@/lib/time"
 
 interface CabinetRow {
   id: string
@@ -152,7 +152,7 @@ export default function CabinetMaintenanceTable() {
                     </span>
                   </Td>
                   <Td className="text-on-surface-variant">{c.filledSlots}/{c.totalSlots}</Td>
-                  <Td className="text-on-surface-variant font-mono text-xs">{formatJakarta(c.lastHeartbeat)}</Td>
+                  <Td className="text-on-surface-variant font-mono text-xs">{formatWIB(c.lastHeartbeat)}</Td>
                   <Td>
                     <select
                       onChange={(e) => setNewStatus(c.id, e.target.value)}

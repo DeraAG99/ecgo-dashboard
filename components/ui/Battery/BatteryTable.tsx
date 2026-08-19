@@ -6,7 +6,7 @@ import Link from "next/link"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
 import BatteryStatusBadge from "./BatteryStatusBadge"
-import { formatJakarta } from "@/lib/time"
+import { formatWIB } from "@/lib/time"
 
 interface BatteryRow {
   id: string
@@ -205,7 +205,7 @@ function BatteryTableInner() {
                       )}
                     </td>
                     <td className="py-4 px-6 text-on-surface-variant">
-                      {battery.lastSwapAt ? formatJakarta(battery.lastSwapAt) : "-"}
+                      {battery.lastSwapAt ? formatWIB(battery.lastSwapAt) : "-"}
                     </td>
                     <td className="py-4 px-6 text-right">
                       <Link

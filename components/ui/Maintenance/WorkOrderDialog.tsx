@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { formatJakarta } from "@/lib/time"
+import { formatWIB } from "@/lib/time"
 
 interface WoRow {
   id: string
@@ -144,7 +144,7 @@ export function WorkOrderDialog({
               <span className="text-on-surface-variant">Teknisi:</span> {value.assignedTo ?? "-"}
             </div>
             <div>
-              <span className="text-on-surface-variant">Dibuat:</span> {formatJakarta(value.createdAt)}
+              <span className="text-on-surface-variant">Dibuat:</span> {formatWIB(value.createdAt)}
             </div>
             {value.alertId && (
               <div>

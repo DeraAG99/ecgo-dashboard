@@ -4,7 +4,7 @@ import { cabinets, slots, transactions } from "@/lib/schema"
 import { cabinetParamsSchema } from "@/lib/validation"
 import { z } from "zod"
 import { sql, eq, desc } from "drizzle-orm"
-import { wibHour } from "@/lib/time-sql"
+import { wibHour } from "@/lib/time/wib.sql"
 
 export async function GET(req: NextRequest) {
   try {

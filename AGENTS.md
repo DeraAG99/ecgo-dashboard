@@ -70,14 +70,22 @@ components/
 ├── shared/   (LoadingSpinner, ErrorMessage, StatusBadge)
 └── ui/       (per domain: Cabinet/, Battery/, Alert/, Forecast/, SlotGrid/, Maintenance/ dst.)
 lib/
-├── alerts/   (scanAlerts.ts + test — deteksi 4 tipe alert + dedupe unresolved)
-├── checkin/  (evaluateCheckin.ts + test — Bagian C; export haversine & tipe Branch/CheckIn/Result)
-├── maintenance/ (createFromAlert.ts, entities.ts, log.ts + test — buat WO dari alert, resolve label entitas, catat log, map prioritas)
-├── db.ts     # Koneksi database (Drizzle)
-├── schema.ts # Schema Drizzle
-├── time.ts   # Helper WIB (Asia/Jakarta): dayStart, dayEndExclusive, dateKey, todayStart, formatJakarta
-├── validation.ts  # Schema Zod terpusat
-└── test-utils.ts  # Helper mock untuk test
+├── alerts/   (index.ts barrel, scanAlerts.ts + test — deteksi 4 tipe alert + dedupe unresolved)
+├── checkin/  (index.ts barrel, evaluateCheckin.ts + test — Bagian C; export haversine & tipe Branch/CheckIn/Result)
+├── maintenance/ (index.ts barrel, createFromAlert.ts, entities.ts, log.ts + test — buat WO dari alert, resolve label entitas, catat log, map prioritas)
+├── db/
+│   ├── index.ts    # Koneksi database (Drizzle)
+│   └── schema.ts   # Schema Drizzle
+├── time/
+│   ├── index.ts    # Barrel re-export
+│   ├── wib.ts      # Helper WIB (Asia/Jakarta): wibStartOfDay, wibEndOfDayExclusive, wibDateKey, wibTodayStart, formatWIB
+│   ├── wib.sql.ts  # SQL helpers: wibDateKey (SQL), wibHour, wibDow, wibDayTrunc, wibNowDayStart
+│   └── *.test.ts   # Tests
+├── validation/
+│   ├── index.ts    # Schema Zod terpusat
+│   └── schemas.test.ts
+├── schema.ts       # Backward-compat re-export (export * from './db/schema')
+└── test-utils.ts   # Helper mock untuk test
 drizzle/
 ├── migrations/
 └── seed.ts   # Seed 50 cabinets (+lat/lng/radiusM), 600 slots, 1000 baterai, 20k transaksi, 20 check-ins, 30 alerts, work orders
@@ -123,7 +131,7 @@ phase.md
 - `cabinets` punya kolom `lat`, `lng`, `radiusM` (target geofence).
 - Tabel `checkins`: riwayat hasil `evaluateCheckIn` (VALID/OUT_OF_RANGE/REJECTED).
 - `POST /api/dashboard/swaps` **hanya jalan** bila ada check-in VALID ≤ 15 menit utk user tsb **dan** cabang cabinet = cabang check-in; lalu INSERT transaksi (`tx-...`, battery `BATT-XXXXXXXX`) + update slot `FULL→EMPTY`, `EMPTY→CHARGING`.
-- Note tipe: `lib/schema.ts` dan `lib/checkin/evaluateCheckin.ts` sama-sama mengekspor tipe `CheckIn` → alias saat import dua-duanya.
+- Note tipe: `lib/db/schema.ts` dan `lib/checkin/evaluateCheckin.ts` sama-sama mengekspor tipe `CheckIn` → alias saat import dua-duanya.
 
 ### Alerts (Fitur tambahan)
 - `lib/alerts/scanAlerts.ts` mendeteksi 4 tipe: CABINET_OFFLINE (status OFFLINE→CRITICAL / MAINTENANCE→WARNING), SLOT_FAULT (state FAULT/LOCKED), BATTERY_LOW (health < 20), SWAP_ANOMALY (swap 24h > 2.5× rata-rata harian).
@@ -247,11 +255,12 @@ bun run start
 
 ## 🕐 TIMEZONE (Asia/Jakarta)
 
-- **Zona tunggal:** WIB (UTC+7). Semua kolom waktu di DB memakai `timestamp` tanpa timezone; data disimpan sebagai wall time WIB.
+- **Zona tunggal:** WIB (UTC+7). Semua kolom waktu di DB memakai `timestamptz`; data disimpan sebagai UTC, dikonversi ke WIB saat query/display.
 - **docker-compose.yml** menyetel `TZ: Asia/Jakarta` (+ `PGTZ: Asia/Jakarta`) di service `postgres` dan `TZ: Asia/Jakarta` di service `dashboard`.
-- **UI** merender semua waktu via `formatJakarta()` dari `lib/time.ts` (paksa `timeZone: "Asia/Jakarta"` eksplisit, bukan default browser). Dipakai di: `CabinetTable.tsx`, `cabinets/[id]/page.tsx` (×2), `transactions/page.tsx`, `checkins/page.tsx`, `AlertList.tsx`, `AlertBell.tsx`.
-- **Filter tanggal** `/api/dashboard/transactions` + export diinterpretasikan sebagai **WIB** (via `jakartaDayStart`/`jakartaDayEndExclusive`; `endDate` inclusive).
-- **KPI dashboard** "swap hari ini" pakai `jakartaTodayStart()` dan label `weeklyTrend` pakai `jakartaDateKey()` — tidak bergantung timezone host/server.
+- **UI** merender semua waktu via `formatWIB()` dari `lib/time/wib.ts` (paksa `timeZone: "Asia/Jakarta"` eksplisit, bukan default browser). Dipakai di: `CabinetTable.tsx`, `cabinets/[id]/page.tsx` (×2), `transactions/page.tsx`, `checkins/page.tsx`, `AlertList.tsx`, `AlertBell.tsx`.
+- **Filter tanggal** `/api/dashboard/transactions` + export diinterpretasikan sebagai **WIB** (via `wibStartOfDay`/`wibEndOfDayExclusive`; `endDate` inclusive).
+- **SQL helpers** (`lib/time/wib.sql.ts`): `wibDateKey`, `wibHour`, `wibDow`, `wibDayTrunc`, `wibNowDayStart` — pakai `AT TIME ZONE 'Asia/Jakarta'` untuk konversi di level PostgreSQL.
+- **KPI dashboard** "swap hari ini" pakai `wibTodayStart()` dan label `weeklyTrend` pakai `wibDateKey()` — tidak bergantung timezone host/server.
 - ⚠️ **Ganti TZ → wajib re-seed** (data lama akan tergeser offset). Saat deploy ulang setelah ubah TZ, hapus/seed ulang DB.
 
 ---
@@ -264,7 +273,7 @@ bun run test:watch        # Watch mode
 bun run test:coverage     # Coverage report
 ```
 
-- **211 test** (vitest + happy-dom + @testing-library). Coverage saat ini 96.27% lines/statements, 76.24% branches, 80.45% functions (threshold: 80/70/80/80).
+- **219 test** (vitest + happy-dom + @testing-library). Coverage saat ini 96.27% lines/statements, 76.24% branches, 80.45% functions (threshold: 80/70/80/80).
 - Test API route memakai mock `@/lib/db` (tidak butuh Postgres). Verifikasi live: Docker Postgres port 5432 + `bun run dev`/`bun run build && bun run start`.
 - ⚠️ **Mock query chain maintenance:** test route PATCH `[id]` yang memakai `dbMock` + mock lib (mis. `addMaintenanceLog`) **wajib** `beforeEach(() => { vi.resetAllMocks(); <libMock>.mockResolvedValue(undefined); ... })` — `vi.clearAllMocks()` **tidak** menghapus antrian `mockReturnValueOnce`, sehingga nilai once dari test sebelumnya bocor ke test berikutnya. `resetAllMocks` juga menghapus implementasi mock lib, jadi defaultnya harus di-set ulang di beforeEach.
 

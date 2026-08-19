@@ -1,5 +1,5 @@
 import { sql, type SQL, type SQLWrapper } from "drizzle-orm"
-import { WIB_ZONE } from "./time"
+import { WIB_ZONE } from "./wib"
 
 function atZone(expr: SQLWrapper): SQL {
   return sql`${expr} AT TIME ZONE '${sql.raw(WIB_ZONE)}'`

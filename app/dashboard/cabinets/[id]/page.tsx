@@ -6,7 +6,7 @@ import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
 import StatusBadge from "@/components/shared/StatusBadge"
 import SlotGrid from "@/components/ui/SlotGrid/SlotGrid"
-import { formatJakarta } from "@/lib/time"
+import { formatWIB } from "@/lib/time"
 import type { Slot } from "@/lib/schema"
 
 interface CabinetDetailData {
@@ -88,7 +88,7 @@ const stale = cabinet.status === "OFFLINE"
             <p className="text-body-sm text-on-surface-variant mt-1 flex items-center gap-2">
               <span className="material-symbols-outlined text-sm">location_on</span>
               Branch: {cabinet.branch} • Heartbeat:{" "}
-              {cabinet.lastHeartbeat ? formatJakarta(cabinet.lastHeartbeat) : "Tidak ada data"}
+              {cabinet.lastHeartbeat ? formatWIB(cabinet.lastHeartbeat) : "Tidak ada data"}
             </p>
           </div>
         </div>
@@ -194,7 +194,7 @@ function TransactionList({ transactions }: { transactions: CabinetDetailData["sw
           {transactions.map((tx) => (
             <tr key={tx.id} className="border-b border-outline-variant/20 hover:bg-surface-dim transition-colors">
               <td className="py-3 px-4 text-on-surface-variant">
-                {tx.swappedAt ? formatJakarta(tx.swappedAt) : "-"}
+                {tx.swappedAt ? formatWIB(tx.swappedAt) : "-"}
               </td>
               <td className="py-3 px-4">{tx.userId}</td>
               <td className="py-3 px-4">

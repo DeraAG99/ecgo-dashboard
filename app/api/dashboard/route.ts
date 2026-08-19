@@ -2,12 +2,12 @@ import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { cabinets, slots, transactions } from "@/lib/schema"
 import { sql, gte, desc, count } from "drizzle-orm"
-import { jakartaTodayStart, jakartaDateKey } from "@/lib/time"
-import { wibDateKey } from "@/lib/time-sql"
+import { wibTodayStart, wibDateKey } from "@/lib/time"
+import { wibDateKey as wibDateKeySQL } from "@/lib/time/wib.sql"
 
 export async function GET() {
   try {
-    const todayStart = jakartaTodayStart()
+    const todayStart = wibTodayStart()
     const sevenDaysAgo = new Date(todayStart.getTime() - 6 * 24 * 60 * 60 * 1000)
 
     const [cabinetRows, slotRows, swapTodayRow, swap7dRows] = await Promise.all([
@@ -31,12 +31,12 @@ export async function GET() {
         .where(gte(transactions.swappedAt, todayStart)),
       db
         .select({
-          day: wibDateKey(transactions.swappedAt),
+          day: wibDateKeySQL(transactions.swappedAt),
           total: count(),
         })
         .from(transactions)
         .where(gte(transactions.swappedAt, sevenDaysAgo))
-        .groupBy(wibDateKey(transactions.swappedAt)),
+        .groupBy(wibDateKeySQL(transactions.swappedAt)),
     ])
 
     const statusMap: Record<string, number> = {
@@ -63,7 +63,7 @@ export async function GET() {
     const labels: string[] = []
     for (let i = 0; i < 7; i++) {
       const d = new Date(sevenDaysAgo.getTime() + i * 24 * 60 * 60 * 1000)
-      labels.push(jakartaDateKey(d))
+      labels.push(wibDateKey(d))
     }
     swap7dRows.forEach((r) => {
       dayMap.set(r.day, Number(r.total))

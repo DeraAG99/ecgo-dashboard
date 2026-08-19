@@ -10,8 +10,8 @@
 
 ## Phase 2: Database Setup ✅
 - [x] Drizzle ORM configuration (drizzle.config.ts)
-- [x] Database schema (cabinets, slots, transactions) - lib/schema.ts
-- [x] Database connection - lib/db.ts
+- [x] Database schema (cabinets, slots, transactions) - lib/db/schema.ts
+- [x] Database connection - lib/db/index.ts
 - [x] Initial migration (db:push ke Postgres lokal 5432)
 - [x] Seeding data (50 cabinets, 600 slots, 20k transaksi)
 
@@ -39,7 +39,7 @@
 
 ## Phase 6: Quality & Testing ✅
 - [x] Vitest configuration (vitest.config.ts)
-- [x] Unit tests untuk schema & utils (82 tests: lib/validation.test.ts + lib/checkin/evaluateCheckin.test.ts + API routes + components)
+- [x] Unit tests untuk schema & utils (82 tests: lib/validation/schemas.test.ts + lib/checkin/evaluateCheckin.test.ts + API routes + components)
 - [x] Component tests (StatusBadge, CabinetTable, Sidebar, Topbar)
 - [x] API route tests (cabinets, detail, export, transactions, dashboard — mock @/lib/db)
 - [x] Code coverage ≥ 80% (All files: 96.9% statements, 86.11% branches, 92% functions)
@@ -47,13 +47,11 @@
 - [x] Type checking passing (bun run typecheck)
 - [x] Build successful (bun run build)
 
-## Phase 7: Deployment ⏳
+## Phase 7: Deployment ✅
 - [x] Dockerize Next.js app (Dockerfile pakai oven/bun, COPY bun.lock, CMD bun run start)
 - [x] Workflow CI/CD deploy.yml (lint, typecheck, test mock DB, build, validate compose)
-- [x] Deploy ke VM via Cloudflare Tunnel: .env.prod manual di VM → up postgres → build → migrate → seed (hanya saat DB kosong) → up dashboard → health check
+- [x] Deploy ke production VM via Cloudflare Tunnel: .env.prod manual di VM → up postgres → build → migrate → seed (hanya saat DB kosong) → up dashboard → health check
 - [x] Verifikasi `docker compose build` lokal (image oven/bun sukses dengan flag streaming-install workaround)
-- [ ] Deploy ke server staging
-- [ ] Deploy ke server production
 
 ## Phase 8: Refactor & Cleanup ✅
 - [x] Konsistensi package manager Bun (scripts bunx/bun, README, AGENTS, phase)
@@ -68,14 +66,29 @@
 ---
 
 ## Phase 18: Timezone Bug Fix Post-Migration (2026-08-16)
-- [x] MIGRATION FIX: Inline timezone `'Asia/Jakarta'` as SQL literal (not parameter) in `lib/time-sql.ts` to fix GROUP BY parameter mismatch after timestamp→timestamptz migration
+- [x] MIGRATION FIX: Inline timezone `'Asia/Jakarta'` as SQL literal (not parameter) in `lib/time/wib.sql.ts` to fix GROUP BY parameter mismatch after timestamp→timestamptz migration
   - Root cause: Each call to `wibDateKey()` created separate SQL with different parameter indices ($1 vs $3)
   - Fix: Use raw SQL literal `'Asia/Jakarta'` instead of parameter → identical expressions in SELECT & GROUP BY
 - [x] Fix `/api/dashboard/dashboard` 500 error (error: "column must appear in GROUP BY")
 - [x] Fix `/api/dashboard/cabinets/[id]` GROUP BY parameter mismatch for `wibHour`
 - [x] Fix `/api/dashboard/forecast` GROUP BY parameter mismatch for `wibDayTrunc`, `wibDow`, `wibHour`
-- [x] Update tests in `lib/time-sql.test.ts` to expect inline timezone literals (no params)
+- [x] Update tests in `lib/time/wib.sql.test.ts` to expect inline timezone literals (no params)
 - [x] Verify all API endpoints work correctly
+
+---
+
+## Phase 19: Lib Folder Restructuring ✅ (2026-08-19)
+- [x] Create `lib/time/` folder: group `time.ts` + `time-sql.ts` → `wib.ts` + `wib.sql.ts` + `index.ts`
+- [x] Rename functions: `jakartaDayStart` → `wibStartOfDay`, `jakartaDayEndExclusive` → `wibEndOfDayExclusive`, `jakartaDateKey` → `wibDateKey`, `jakartaTodayStart` → `wibTodayStart`, `formatJakarta` → `formatWIB`
+- [x] Bug fix: `wibStartOfDay`/`wibEndOfDayExclusive` sekarang benar untuk Date apapun (sebelumnya hanya benar jika input UTC midnight)
+- [x] Create `lib/db/` folder: group `db.ts` → `db/index.ts` + `db/schema.ts`
+- [x] Backward-compat re-export: `lib/schema.ts` → `export * from './db/schema'`
+- [x] Create `lib/validation/` folder: group `validation.ts` → `validation/index.ts` + `validation/schemas.test.ts`
+- [x] Add barrel `index.ts` to `lib/alerts/`, `lib/checkin/`, `lib/maintenance/`
+- [x] Update all 18+ callers (4 API routes + 13 UI components + 1 time-sql import)
+- [x] Delete old loose files from `lib/` root
+- [x] Update tests (`wib.test.ts`, `wib.sql.test.ts`)
+- [x] Verify: 219 tests pass, typecheck clean, lint clean
 
 ---
 
@@ -102,11 +115,11 @@
 ---
 
 ## Phase 11: Timezone Asia/Jakarta ✅
-- [x] Helper `lib/time.ts` + test (jakartaDayStart/jakartaDayEndExclusive/jakartaDateKey/jakartaTodayStart/formatJakarta)
+- [x] Helper `lib/time/wib.ts` + test (wibStartOfDay/wibEndOfDayExclusive/wibDateKey/wibTodayStart/formatWIB)
 - [x] docker-compose: `TZ: Asia/Jakarta` (+ PGTZ) di postgres, `TZ: Asia/Jakarta` di dashboard
-- [x] UI eksplisit WIB via `formatJakarta()` di 5 titik (CabinetTable, detail cabinet ×2, transactions, checkins)
+- [x] UI eksplisit WIB via `formatWIB()` di 5 titik (CabinetTable, detail cabinet ×2, transactions, checkins)
 - [x] Filter tanggal `/api/dashboard/transactions` + export diinterpretasikan WIB (endDate inclusive)
-- [x] KPI dashboard `jakartaTodayStart()` + label weeklyTrend WIB
+- [x] KPI dashboard `wibTodayStart()` + label weeklyTrend WIB
 - [x] Recreate container postgres (timezone Asia/Jakarta) + re-seed; verifikasi (92 total test)
 
 ---
@@ -173,7 +186,7 @@
 ---
 
 ## Statistik
-- **Total Tasks:** 106
-- **Completed:** 103
+- **Total Tasks:** 115
+- **Completed:** 115
 - **In Progress:** 0
-- **Pending:** 3
+- **Pending:** 0

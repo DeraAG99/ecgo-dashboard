@@ -5,7 +5,7 @@ import { useParams, useRouter, notFound } from "next/navigation"
 import LoadingSpinner from "@/components/shared/LoadingSpinner"
 import ErrorMessage from "@/components/shared/ErrorMessage"
 import BatteryStatusBadge from "@/components/ui/Battery/BatteryStatusBadge"
-import { formatJakarta } from "@/lib/time"
+import { formatWIB } from "@/lib/time"
 import Link from "next/link"
 
 interface BatteryDetailData {
@@ -137,7 +137,7 @@ export default function BatteryDetail() {
         <div className="card p-6">
           <span className="text-label-caps text-on-surface-variant uppercase">Swap Terakhir</span>
           <div className="font-display text-headline-md text-ecgo-blue mt-3">
-            {battery.lastSwapAt ? formatJakarta(battery.lastSwapAt) : "-"}
+            {battery.lastSwapAt ? formatWIB(battery.lastSwapAt) : "-"}
           </div>
         </div>
       </div>
@@ -162,7 +162,7 @@ export default function BatteryDetail() {
               <tbody className="font-mono text-data-mono text-on-surface">
                 {history.map((tx) => (
                   <tr key={tx.id} className="border-b border-outline-variant/20 hover:bg-surface-dim transition-colors">
-                    <td className="py-3 px-4 text-on-surface-variant">{formatJakarta(tx.swappedAt)}</td>
+                    <td className="py-3 px-4 text-on-surface-variant">{formatWIB(tx.swappedAt)}</td>
                     <td className="py-3 px-4">{tx.userId}</td>
                     <td className="py-3 px-4">
                       {tx.branch} ({tx.cabinetCode})

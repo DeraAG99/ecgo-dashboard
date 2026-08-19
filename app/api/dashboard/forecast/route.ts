@@ -3,8 +3,8 @@ import { db } from "@/lib/db"
 import { transactions, cabinets } from "@/lib/schema"
 import { sql } from "drizzle-orm"
 import { z } from "zod"
-import { jakartaDateKey } from "@/lib/time"
-import { wibDow, wibHour, wibDayTrunc, wibNowDayStart } from "@/lib/time-sql"
+import { wibDateKey } from "@/lib/time"
+import { wibDow, wibHour, wibDayTrunc, wibNowDayStart } from "@/lib/time/wib.sql"
 
 const forecastQuerySchema = z.object({
   branch: z.string().optional(),
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
 
     const forecastDaily: { date: string; predicted: number }[] = []
     for (let d = 1; d <= days; d++) {
-      const key = jakartaDateKey(new Date(Date.now() + d * 86400000))
+      const key = wibDateKey(new Date(Date.now() + d * 86400000))
       const dow = new Date(`${key}T00:00:00Z`).getUTCDay()
       const sum = profile[dow]!.reduce((acc, v) => acc + v, 0)
       forecastDaily.push({ date: key, predicted: Math.round(sum) })
